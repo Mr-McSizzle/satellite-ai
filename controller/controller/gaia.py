@@ -1,12 +1,12 @@
-from controller.classifier import QuestionClassifier
-from controller.validator import InputValidator
-from controller.registry import ToolRegistry
-from controller.executor import Executor
-from controller.trace import TraceRecorder
-from controller.planner import TaskPlanner
-from controller.confidence import ConfidenceEngine
-from controller.recovery import RecoveryEngine
-from controller.audit import AuditEngine
+from .classifier import QuestionClassifier
+from .validator import InputValidator
+from .registry import ToolRegistry
+from .executor import Executor
+from .trace import TraceRecorder
+from .planner import TaskPlanner
+from .confidence import ConfidenceEngine
+from .recovery import RecoveryEngine
+from .audit import AuditEngine
 
 class GaiaController:
     """

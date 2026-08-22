@@ -1,6 +1,12 @@
-from controller.registry import ToolRegistry
-from mocks.mock_vlm import MockVLM
-from mocks.mock_prithvi import MockPrithvi
+from .registry import ToolRegistry
+try:
+    # When running from controller/ (pytest with pythonpath=.)
+    from mocks.mock_vlm import MockVLM
+    from mocks.mock_prithvi import MockPrithvi
+except ImportError:
+    # When running from repo root (controller/ is a namespace package)
+    from controller.mocks.mock_vlm import MockVLM  # noqa: F401
+    from controller.mocks.mock_prithvi import MockPrithvi  # noqa: F401
 
 class Executor:
     """Executes the mapped tools for a given validated GAIA request."""

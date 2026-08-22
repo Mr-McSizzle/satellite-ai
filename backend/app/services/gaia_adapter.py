@@ -7,6 +7,12 @@ Responsibilities:
 - Return the raw GAIA output dict (no re-interpretation here).
 """
 import logging
+import sys
+from pathlib import Path
+
+controller_path = Path(__file__).resolve().parents[3] / "controller"
+if str(controller_path) not in sys.path:
+    sys.path.insert(0, str(controller_path))
 
 from controller.gaia import GaiaController
 from mocks.mock_vlm import MockVLM

@@ -71,6 +71,15 @@ uvicorn app.main:app --reload
 
 By default, the server will start at `http://127.0.0.1:8000`. You can view the interactive OpenAPI documentation at `http://127.0.0.1:8000/docs`.
 
+The backend imports the sibling GAIA controller package through the backend adapter. If you run into stale environment issues, recreate the virtual environment and reinstall dependencies:
+
+```bash
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+
 ---
 
 ## Testing

@@ -93,7 +93,7 @@ def test_unknown_question(controller):
     
     assert res["task"] == "unknown"
     assert res["execution_trace"]["execution_status"] == "failed"
-    assert not res["execution_trace"]["validation_result"]["valid"]
+    assert any("Planning error" in err for err in res["execution_trace"]["errors"])
 
 def test_prithvi_failure(controller):
     req = make_request("What changed between these two images?", 2, fail_prithvi=True)
@@ -114,3 +114,31 @@ def test_vlm_failure(controller):
     assert len(res["execution_trace"]["tools_invoked"]) == 1
     assert res["execution_trace"]["tools_invoked"][0]["tool_name"] == "vlm"
     assert res["execution_trace"]["tools_invoked"][0]["execution_status"] == "failed"
+
+def test_invalid_planner_task(controller):
+    req = make_request("Is there water in this image?", 1)
+    # mock classifier to return an unknown task but not throw
+    controller.classifier.classify = lambda q: type('obj', (object,), {'task': 'unsupported_task', 'confidence': 0.0})
+    res = controller.run(req)
+    assert res["execution_trace"]["execution_status"] == "failed"
+    assert any("Planning error" in err for err in res["execution_trace"]["errors"])
+
+def test_successful_execution_includes_confidence_and_audit(controller):
+    req = make_request("Is there water in this image?", 1)
+    res = controller.run(req)
+    
+    assert res["execution_trace"]["execution_status"] == "success"
+    assert "confidence" in res
+    assert "confidence_level" in res
+    assert res["confidence"] > 0
+    assert "audit" in res["execution_trace"]
+    assert res["execution_trace"]["audit"]["audit_status"] == "passed"
+
+def test_failed_execution_creates_recovery_decision(controller):
+    req = make_request("What changed between these two images?", 2, fail_prithvi=True)
+    res = controller.run(req)
+    
+    assert res["execution_trace"]["execution_status"] == "failed"
+    assert "recovery" in res["execution_trace"]
+    assert "recoverable" in res["execution_trace"]["recovery"]
+    assert "audit" in res["execution_trace"]

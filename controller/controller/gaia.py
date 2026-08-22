@@ -3,17 +3,25 @@ from controller.validator import InputValidator
 from controller.registry import ToolRegistry
 from controller.executor import Executor
 from controller.trace import TraceRecorder
+from controller.planner import TaskPlanner
+from controller.confidence import ConfidenceEngine
+from controller.recovery import RecoveryEngine
+from controller.audit import AuditEngine
 
 class GaiaController:
     """
     Top-level entry point for the GAIA Agentic Controller.
-    Integrates the classifier, validator, registry, and executor.
+    Integrates all modules.
     """
     def __init__(self, vlm=None, prithvi=None):
         self.classifier = QuestionClassifier()
+        self.planner = TaskPlanner()
         self.validator = InputValidator()
         self.registry = ToolRegistry()
         self.executor = Executor(registry=self.registry, vlm=vlm, prithvi=prithvi)
+        self.confidence_engine = ConfidenceEngine()
+        self.recovery_engine = RecoveryEngine()
+        self.audit_engine = AuditEngine()
         
     def run(self, request: dict) -> dict:
         trace = TraceRecorder()
@@ -26,33 +34,41 @@ class GaiaController:
             "execution_trace": {}
         }
         
-        # 1. Basic check before classification
         if not isinstance(request, dict):
             trace.set_task("unknown")
             trace.add_error("Request must be a dictionary.")
             trace.set_status("failed")
             output["execution_trace"] = trace.build()
+            self._apply_audit(request, output)
             return output
             
         question = request.get("question", "")
         
-        # 2. Classify Question
         try:
             class_res = self.classifier.classify(question)
             task = class_res.task
             output["task"] = task
-            output["confidence"] = class_res.confidence
         except Exception as e:
             task = "unknown"
             trace.set_task(task)
             trace.add_error(f"Classification error: {str(e)}")
             trace.set_status("failed")
             output["execution_trace"] = trace.build()
+            self._apply_audit(request, output)
             return output
             
         trace.set_task(task)
         
-        # 3. Validate Input
+        try:
+            plan = self.planner.create_plan(task, request)
+            request["plan"] = plan
+        except Exception as e:
+            trace.set_status("failed")
+            trace.add_error(f"Planning error: {str(e)}")
+            output["execution_trace"] = trace.build()
+            self._apply_audit(request, output)
+            return output
+        
         val_res = self.validator.validate(request, task)
         trace.set_validation({
             "valid": val_res.valid,
@@ -64,14 +80,30 @@ class GaiaController:
             trace.set_status("failed")
             for err in val_res.errors:
                 trace.add_error(err)
+                
+            conf = self.confidence_engine.calculate({
+                "validation_valid": False,
+                "tool_confidences": [],
+                "evidence_available": False
+            })
+            output["confidence"] = conf["confidence"]
+            output["confidence_level"] = conf["level"]
+            
             output["execution_trace"] = trace.build()
+            
+            recovery_decision = self.recovery_engine.analyze_failure(output["execution_trace"])
+            output["execution_trace"]["recovery"] = recovery_decision
+            
+            self._apply_audit(request, output)
             return output
             
-        # 4. Execute Tools
         exec_res = self.executor.execute(task, request)
         
+        tool_confidences = []
         for tool_res in exec_res.get("tool_results", []):
-            # Extract metadata/parameters depending on which tool it is
+            if "confidence" in tool_res:
+                tool_confidences.append(tool_res["confidence"])
+                
             params = tool_res.get("metadata", {})
             if "results" in tool_res:
                 params["results"] = tool_res["results"]
@@ -97,5 +129,26 @@ class GaiaController:
             output["answer"] = exec_res.get("answer")
             output["evidence"] = exec_res.get("evidence", [])
             
+        conf_signals = {
+            "validation_valid": True,
+            "tool_confidences": tool_confidences,
+            "evidence_available": len(output["evidence"]) > 0
+        }
+        conf = self.confidence_engine.calculate(conf_signals)
+        output["confidence"] = conf["confidence"]
+        output["confidence_level"] = conf["level"]
+        
         output["execution_trace"] = trace.build()
+        
+        if trace.execution_status == "failed":
+            recovery_decision = self.recovery_engine.analyze_failure(output["execution_trace"])
+            output["execution_trace"]["recovery"] = recovery_decision
+            
+        self._apply_audit(request, output)
+            
         return output
+
+    def _apply_audit(self, request, output):
+        audit_res = self.audit_engine.audit(request, output)
+        output["execution_trace"]["audit"] = audit_res
+

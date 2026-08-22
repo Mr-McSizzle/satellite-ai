@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GAIA Controller Input",
+  "description": "Schema for the input request to the GAIA Agentic Controller.",
+  "type": "object",
+  "properties": {
+    "question": {
+      "type": "string",
+      "description": "The user's natural-language question."
+    },
+    "images": {
+      "type": "array",
+      "description": "One or more satellite images supplied with the request.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "reference": {
+            "type": "string",
+            "description": "The identity or URI reference to the uploaded image."
+          },
+          "format": {
+            "type": "string",
+            "description": "The format of the image (e.g., tiff, jpeg, png)."
+          },
+          "modality": {
+            "type": "string",
+            "description": "The imaging modality when known (e.g., optical, SAR)."
+          },
+          "acquisition_time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The acquisition time of the image when known."
+          },
+          "spatial_metadata": {
+            "type": "object",
+            "description": "Spatial and reference metadata when available.",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "reference",
+          "format"
+        ],
+        "additionalProperties": true
+      },
+      "minItems": 1
+    },
+    "is_pair": {
+      "type": "boolean",
+      "description": "Whether the input is intended to represent a pair (e.g., for bi-temporal or cross-modal analysis)."
+    }
+  },
+  "required": [
+    "question",
+    "images"
+  ],
+  "additionalProperties": false
+}

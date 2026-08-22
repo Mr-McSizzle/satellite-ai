@@ -169,19 +169,29 @@ def test_invalid_no_images(client: TestClient) -> None:
     payload = {"query": "Describe this scene.", "images": []}
     assert client.post("/api/v1/analyze", json=payload).status_code == 422
 
-def test_invalid_image_format_png(client: TestClient) -> None:
-    """PNG extension must be rejected with HTTP 422."""
+def test_valid_image_format_png(client: TestClient) -> None:
+    """PNG extension is accepted and forwarded as a supported controller format."""
     payload = {
         "query": "Describe this scene.",
         "images": [{"reference": "/data/scene.png", "modality": "optical"}],
     }
-    assert client.post("/api/v1/analyze", json=payload).status_code == 422
+    response = client.post("/api/v1/analyze", json=payload)
+    assert response.status_code == 200, response.text
 
-def test_invalid_image_format_jpeg(client: TestClient) -> None:
-    """JPEG extension must be rejected with HTTP 422."""
+def test_valid_image_format_jpeg(client: TestClient) -> None:
+    """JPEG extension is accepted and forwarded as a supported controller format."""
     payload = {
         "query": "Describe this scene.",
         "images": [{"reference": "/data/scene.jpg", "modality": "optical"}],
+    }
+    response = client.post("/api/v1/analyze", json=payload)
+    assert response.status_code == 200, response.text
+
+def test_invalid_image_format_bmp(client: TestClient) -> None:
+    """Unsupported extensions must still be rejected with HTTP 422."""
+    payload = {
+        "query": "Describe this scene.",
+        "images": [{"reference": "/data/scene.bmp", "modality": "optical"}],
     }
     assert client.post("/api/v1/analyze", json=payload).status_code == 422
 

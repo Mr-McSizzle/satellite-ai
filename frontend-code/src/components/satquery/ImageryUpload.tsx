@@ -2,7 +2,12 @@ import { useRef, useState, type DragEvent } from "react";
 import { AlertTriangle, FileImage, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatBytes } from "@/lib/satquery/file";
-import type { RequiredInput, UploadedImage, WorkflowPlan } from "@/lib/satquery/types";
+import type { ImageModality, RequiredInput, UploadedImage, WorkflowPlan } from "@/lib/satquery/types";
+
+const MODALITIES: { value: ImageModality; label: string }[] = [
+  { value: "optical", label: "Optical" },
+  { value: "SAR", label: "SAR" },
+];
 
 function Slot({
   spec,
@@ -11,24 +16,33 @@ function Slot({
   onFile,
   onRemove,
   onDate,
+  onModality,
   askDate,
 }: {
   spec: RequiredInput;
   image: UploadedImage | undefined;
   error: string | undefined;
-  onFile: (file: File) => void;
+  onFile: (file: File, modality: ImageModality) => void;
   onRemove: () => void;
   onDate: (value: string) => void;
+  onModality: (value: ImageModality) => void;
   askDate: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
+  const [selectedModality, setSelectedModality] = useState<ImageModality>("optical");
+  const modality = image?.modality ?? selectedModality;
+
+  function updateModality(value: ImageModality) {
+    setSelectedModality(value);
+    onModality(value);
+  }
 
   function drop(e: DragEvent) {
     e.preventDefault();
     setOver(false);
     const file = e.dataTransfer.files?.[0];
-    if (file) onFile(file);
+    if (file) onFile(file, modality);
   }
 
   return (
@@ -53,15 +67,37 @@ function Slot({
         <input
           ref={inputRef}
           type="file"
-          accept="image/*,.tif,.tiff"
+          accept=".tif,.tiff,.png,.jpg,.jpeg"
           className="sr-only"
           aria-label={`Upload ${spec.label}`}
           onChange={(e) => {
             const file = e.target.files?.[0];
-            if (file) onFile(file);
+            if (file) onFile(file, modality);
             e.target.value = "";
           }}
         />
+
+        <fieldset className="mb-4 rounded-md border border-border bg-surface-raised/60 px-3 py-2">
+          <legend className="px-1 label-mono">Modality</legend>
+          <div className="flex flex-wrap gap-4">
+            {MODALITIES.map((option) => (
+              <label
+                key={option.value}
+                className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground"
+              >
+                <input
+                  type="radio"
+                  name={`modality-${spec.id}`}
+                  value={option.value}
+                  checked={modality === option.value}
+                  onChange={() => updateModality(option.value)}
+                  className="accent-primary"
+                />
+                <span className={modality === option.value ? "text-foreground" : ""}>{option.label}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
 
         {!image ? (
           <button
@@ -102,9 +138,10 @@ function Slot({
             </div>
 
             <dl className="grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-[11px] text-muted-foreground">
-              <div className="col-span-2 truncate text-foreground">{image.file.name}</div>
+              <div className="col-span-2 truncate text-foreground">{image.name}</div>
               <div>{formatBytes(image.sizeBytes)}</div>
               <div className="text-right">{image.format}</div>
+              <div className="col-span-2">Modality: {image.modality}</div>
               {image.width > 0 && (
                 <div className="col-span-2">
                   {image.width} × {image.height} px
@@ -114,8 +151,8 @@ function Slot({
 
             {!image.mayCarryGeoMetadata && (
               <p className="text-xs leading-relaxed text-muted-foreground">
-                PNG/JPEG carries no geospatial metadata, so no sensor, resolution, coordinates or
-                acquisition date are claimed for this file.
+                PNG/JPEG previews are supported in the browser. The backend still needs upload
+                support that stores or converts the file and returns an analysis reference.
               </p>
             )}
 
@@ -159,13 +196,15 @@ export function ImageryUpload({
   onFile,
   onRemove,
   onDate,
+  onModality,
 }: {
   plan: WorkflowPlan;
   images: UploadedImage[];
   errors: Record<string, string | undefined>;
-  onFile: (slot: RequiredInput["id"], file: File) => void;
+  onFile: (slot: RequiredInput["id"], file: File, modality: ImageModality) => void;
   onRemove: (slot: RequiredInput["id"]) => void;
   onDate: (slot: RequiredInput["id"], value: string) => void;
+  onModality: (slot: RequiredInput["id"], value: ImageModality) => void;
 }) {
   return (
     <section className="animate-rise space-y-4">
@@ -182,9 +221,10 @@ export function ImageryUpload({
             spec={spec}
             image={images.find((i) => i.slot === spec.id)}
             error={errors[spec.id]}
-            onFile={(f) => onFile(spec.id, f)}
+            onFile={(f, modality) => onFile(spec.id, f, modality)}
             onRemove={() => onRemove(spec.id)}
             onDate={(v) => onDate(spec.id, v)}
+            onModality={(v) => onModality(spec.id, v)}
             askDate={plan.intent === "bitemporal"}
           />
         ))}

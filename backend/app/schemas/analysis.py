@@ -1,6 +1,8 @@
 from typing import List, Any, Dict
 from pydantic import BaseModel, Field, field_validator
 
+ALLOWED_IMAGE_EXTENSIONS = (".tif", ".tiff", ".png", ".jpg", ".jpeg")
+
 # ---------------------------------------------------------------------------
 # Sub-models
 # ---------------------------------------------------------------------------
@@ -22,9 +24,9 @@ class ImageInfo(BaseModel):
     @classmethod
     def validate_extension(cls, v: str) -> str:
         lower = v.lower()
-        if not (lower.endswith(".tif") or lower.endswith(".tiff")):
+        if not lower.endswith(ALLOWED_IMAGE_EXTENSIONS):
             raise ValueError(
-                f"Unsupported file extension for '{v}'. Only .tif and .tiff are accepted."
+                f"Unsupported file extension for '{v}'. Only .tif, .tiff, .png, .jpg and .jpeg are accepted."
             )
         return v
 

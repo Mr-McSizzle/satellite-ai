@@ -4,6 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     PROJECT_NAME: str = "satquery-backend"
     API_V1_STR: str = "/api/v1"
+    UPLOAD_DIR: str = "storage/uploads"
     
     # CORS Origins allowed to access the API. Defaults to common frontend development ports.
     BACKEND_CORS_ORIGINS: List[str] = [

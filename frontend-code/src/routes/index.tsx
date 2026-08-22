@@ -11,10 +11,12 @@ import { ResultDashboard } from "@/components/satquery/ResultDashboard";
 import { EvaluationSection } from "@/components/satquery/EvaluationSection";
 import { EarthGlobe } from "@/components/satquery/EarthGlobe";
 import { HudFrame } from "@/components/satquery/HudFrame";
+import { checkHealth } from "@/api/health";
+import { uploadImage } from "@/api/upload";
 import { routeQuery } from "@/lib/satquery/router";
 import { readImageFile } from "@/lib/satquery/file";
-import { STAGES, runDemoAnalysis } from "@/lib/satquery/analysis";
-import type { AnalysisResult, SlotId, UploadedImage, WorkflowPlan } from "@/lib/satquery/types";
+import { STAGES, runBackendAnalysis } from "@/lib/satquery/analysis";
+import type { AnalysisResult, ImageModality, SlotId, UploadedImage, WorkflowPlan } from "@/lib/satquery/types";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -36,12 +38,12 @@ export const Route = createFileRoute("/")({
   component: SatQuery,
 });
 
-function StatusDot({ label, ok }: { label: string; ok: boolean }) {
+function StatusDot({ label, ok }: { label: string; ok: boolean | null }) {
+  const color = ok === null ? "bg-muted-foreground" : ok ? "animate-pulse-dot bg-success" : "bg-destructive";
+
   return (
     <span className="flex items-center gap-1.5 font-mono text-[11px] text-muted-foreground">
-      <span
-        className={`size-1.5 rounded-full ${ok ? "animate-pulse-dot bg-success" : "bg-muted-foreground"}`}
-      />
+      <span className={`size-1.5 rounded-full ${color}`} />
       {label}
     </span>
   );
@@ -55,6 +57,8 @@ function SatQuery() {
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
   const [stage, setStage] = useState(-1);
   const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [backendOk, setBackendOk] = useState<boolean | null>(null);
   const planRef = useRef<HTMLDivElement>(null);
 
   const handleSubmit = useCallback((q: string) => {
@@ -64,16 +68,38 @@ function SatQuery() {
     setImages([]);
     setErrors({});
     setResult(null);
+    setAnalysisError(null);
     setStage(-1);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function pollHealth() {
+      try {
+        await checkHealth();
+        if (!cancelled) setBackendOk(true);
+      } catch {
+        if (!cancelled) setBackendOk(false);
+      }
+    }
+
+    void pollHealth();
+    const interval = window.setInterval(() => void pollHealth(), 30_000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
   }, []);
 
   useEffect(() => {
     if (plan) planRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [plan]);
 
-  const onFile = useCallback(async (slot: SlotId, file: File) => {
+  const onFile = useCallback(async (slot: SlotId, file: File, modality: ImageModality) => {
     try {
-      const parsed = await readImageFile(slot, file);
+      const parsed = await readImageFile(slot, file, modality);
       setImages((prev) => {
         const old = prev.find((i) => i.slot === slot);
         if (old) URL.revokeObjectURL(old.previewUrl);
@@ -99,6 +125,12 @@ function SatQuery() {
     setImages((prev) => prev.map((i) => (i.slot === slot ? { ...i, observationDate: value } : i)));
   }, []);
 
+  const onModality = useCallback((slot: SlotId, value: ImageModality) => {
+    setImages((prev) =>
+      prev.map((i) => (i.slot === slot ? { ...i, modality: value, reference: undefined } : i)),
+    );
+  }, []);
+
   const checks = useMemo(() => {
     if (!plan) return [];
     const supplied = images.length === plan.requiredInputs.length;
@@ -110,9 +142,9 @@ function SatQuery() {
       {
         label:
           plan.intent === "bitemporal"
-            ? "Earlier and later observations identified"
+            ? "Earlier and later upload slots supplied"
             : plan.intent === "optical_sar"
-              ? "Optical and radar observations identified"
+              ? "Optical and SAR upload slots supplied"
               : "Input configuration valid",
         ok: supplied,
       },
@@ -120,19 +152,51 @@ function SatQuery() {
   }, [plan, images]);
 
   const ready = checks.length > 0 && checks.every((c) => c.ok);
-  const running = stage >= 0 && stage < STAGES.length;
+  const running = stage >= 0 && stage < STAGES.length && !result;
+  const backendLabel =
+    backendOk === null
+      ? "MODEL BACKEND — CHECKING"
+      : backendOk
+        ? "MODEL BACKEND — CONNECTED"
+        : "MODEL BACKEND — UNAVAILABLE";
 
-  useEffect(() => {
-    if (!running) return;
-    const t = setTimeout(() => setStage((s) => s + 1), 420);
-    return () => clearTimeout(t);
-  }, [running, stage]);
+  const analyze = useCallback(async () => {
+    if (!plan || !ready || running) return;
 
-  useEffect(() => {
-    if (stage === STAGES.length && plan && !result) {
-      setResult(runDemoAnalysis(submittedQuery, plan, images));
+    setResult(null);
+    setAnalysisError(null);
+    setStage(0);
+
+    try {
+      const orderedImages = plan.requiredInputs
+        .map((input) => images.find((image) => image.slot === input.id))
+        .filter((image): image is UploadedImage => Boolean(image));
+
+      const uploadedImages: UploadedImage[] = [];
+
+      for (const image of orderedImages) {
+        const uploaded = await uploadImage(image.file, image.modality);
+        uploadedImages.push({
+          ...image,
+          reference: uploaded.reference,
+          modality: uploaded.modality,
+        });
+      }
+
+      setStage(1);
+      setImages((prev) =>
+        prev.map((image) => uploadedImages.find((uploaded) => uploaded.slot === image.slot) ?? image),
+      );
+
+      setStage(2);
+      const nextResult = await runBackendAnalysis(submittedQuery, uploadedImages);
+      setStage(STAGES.length - 1);
+      setResult(nextResult);
+    } catch (error) {
+      setAnalysisError(error instanceof Error ? error.message : "GAIA analysis failed.");
+      setStage(-1);
     }
-  }, [stage, plan, result, submittedQuery, images]);
+  }, [images, plan, ready, running, submittedQuery]);
 
   return (
     <TooltipProvider delayDuration={150}>
@@ -153,7 +217,7 @@ function SatQuery() {
             <div className="flex flex-wrap items-center gap-4">
               <StatusDot label="SYSTEM READY" ok />
               <StatusDot label="AGENT READY" ok />
-              <StatusDot label="MODEL BACKEND — NOT CONNECTED" ok={false} />
+              <StatusDot label={backendLabel} ok={backendOk} />
             </div>
           </div>
         </header>
@@ -207,6 +271,7 @@ function SatQuery() {
                   onFile={onFile}
                   onRemove={onRemove}
                   onDate={onDate}
+                  onModality={onModality}
                 />
 
                 <section className="panel animate-rise p-5">
@@ -226,13 +291,15 @@ function SatQuery() {
                   <Button
                     className="mt-5 w-full sm:w-auto"
                     disabled={!ready || running}
-                    onClick={() => {
-                      setResult(null);
-                      setStage(0);
-                    }}
+                    onClick={() => void analyze()}
                   >
                     {running ? "Analyzing…" : "Analyze with GAIA"}
                   </Button>
+                  {analysisError && (
+                    <p className="mt-3 max-w-2xl text-sm leading-relaxed text-destructive">
+                      {analysisError}
+                    </p>
+                  )}
                 </section>
 
                 {stage >= 0 && !result && <AnalysisTimeline activeIndex={stage} />}
@@ -244,10 +311,9 @@ function SatQuery() {
           <EvaluationSection />
 
           <footer className="border-t border-border pt-6 text-xs leading-relaxed text-muted-foreground">
-            GAIA prototype. Workflow routing runs locally from the wording of your query and is
-            labelled as demo routing. No remote-sensing model is executed in this build, so no
-            sensor metadata, acquisition date, coordinate, area measurement or confidence value is
-            reported unless it comes from the file you supplied or from you directly.
+            GAIA frontend client. Local routing is used only to suggest the upload shape; the
+            backend remains the source of truth for task selection, execution, confidence, evidence
+            and audit.
           </footer>
         </main>
       </div>

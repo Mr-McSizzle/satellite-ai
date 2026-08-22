@@ -21,7 +21,7 @@ export function WorkflowPanel({ plan }: { plan: WorkflowPlan }) {
             </h2>
           </div>
           <span className="font-mono text-[10px] tracking-[0.2em] text-warning uppercase">
-            Demo routing
+            UI hint only
           </span>
         </div>
 
@@ -39,7 +39,7 @@ export function WorkflowPanel({ plan }: { plan: WorkflowPlan }) {
       </div>
 
       <div className="panel p-5">
-        <p className="label-mono text-primary/80">Agentic routing</p>
+        <p className="label-mono text-primary/80">Upload guidance</p>
         <div className="mt-4 grid gap-5 sm:grid-cols-2">
           <div className="space-y-3 border-r border-border/60 pr-0 sm:pr-5">
             <div>
@@ -69,9 +69,8 @@ export function WorkflowPanel({ plan }: { plan: WorkflowPlan }) {
               </div>
             ))}
             <p className="text-xs leading-relaxed text-muted-foreground">
-              These components describe the workflow this request is routed to. Nothing is executed
-              on a model server in this build, so no result on this page should be read as a
-              measured model output.
+              These components are frontend guidance for the upload shape. The backend selects the
+              actual task, routes tools, executes models and returns the measured result.
             </p>
           </div>
         </div>

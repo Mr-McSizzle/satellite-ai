@@ -18,7 +18,16 @@ logger = logging.getLogger("app.services.gaia_adapter")
 
 
 def _derive_format(reference: str) -> str:
-    """Returns 'tiff' for .tif/.tiff files (already validated by the schema)."""
+    """Derives the GAIA controller image format from the validated reference extension."""
+    lower = reference.lower()
+    if lower.endswith(".tif") or lower.endswith(".tiff"):
+        return "tiff"
+    if lower.endswith(".png"):
+        return "png"
+    if lower.endswith(".jpg"):
+        return "jpg"
+    if lower.endswith(".jpeg"):
+        return "jpeg"
     return "tiff"
 
 

@@ -1,0 +1,150 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GAIA Controller ↔ Prithvi Interface",
+  "description": "Defines the Request and Response data contract between the GAIA Agentic Controller and the Prithvi-based perception layer.",
+  "type": "object",
+  "oneOf": [
+    {
+      "$ref": "#/definitions/PrithviRequest"
+    },
+    {
+      "$ref": "#/definitions/PrithviResponse"
+    }
+  ],
+  "definitions": {
+    "PrithviRequest": {
+      "type": "object",
+      "description": "Request sent from the Controller to the Prithvi perception layer.",
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "description": "Identifier for the task (e.g., 'segmentation', 'change_detection', 'fusion')."
+        },
+        "images": {
+          "type": "array",
+          "description": "One or more image references to be processed.",
+          "items": {
+            "$ref": "#/definitions/PrithviImage"
+          },
+          "minItems": 1
+        },
+        "parameters": {
+          "type": "object",
+          "description": "Optional parameters or configuration for the Prithvi task.",
+          "additionalProperties": true
+        },
+        "pair_info": {
+          "type": "object",
+          "description": "Optional information identifying a temporal pair or cross-modal pair (e.g., pre/post, optical/SAR).",
+          "properties": {
+            "pair_type": {
+              "type": "string",
+              "description": "The type of pair (e.g., 'temporal', 'cross-modal')."
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "task_id",
+        "images"
+      ],
+      "additionalProperties": false
+    },
+    "PrithviResponse": {
+      "type": "object",
+      "description": "Response returned from Prithvi to the Controller.",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "success",
+            "failed"
+          ],
+          "description": "Execution status indicating whether the Prithvi call succeeded or failed."
+        },
+        "results": {
+          "type": "array",
+          "description": "Structured perception results (e.g., bounding boxes, statistics, class distributions).",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "description": "Evidence references such as segmentation masks or change maps.",
+          "items": {
+            "$ref": "#/definitions/EvidenceItem"
+          }
+        },
+        "metrics": {
+          "type": "object",
+          "description": "Optional numeric scores or metrics (e.g., confidence scores, IoU, change percentage).",
+          "additionalProperties": true
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Optional model execution metadata.",
+          "additionalProperties": true
+        },
+        "errors": {
+          "type": "array",
+          "description": "List of errors if the call failed.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "description": "List of warnings generated during execution.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "PrithviImage": {
+      "type": "object",
+      "description": "Reference to an image payload, potentially with modality information.",
+      "properties": {
+        "uri": {
+          "type": "string",
+          "description": "Path or URI to the image data."
+        },
+        "modality": {
+          "type": "string",
+          "description": "Imaging modality (e.g., 'optical', 'SAR')."
+        }
+      },
+      "required": [
+        "uri"
+      ],
+      "additionalProperties": true
+    },
+    "EvidenceItem": {
+      "type": "object",
+      "description": "A piece of visual or structured evidence (like a segmentation mask reference).",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "The type of evidence (e.g., 'segmentation_mask', 'change_map')."
+        },
+        "data": {
+          "type": "object",
+          "description": "The structure payload containing mask URIs, bounding box coords, etc.",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "type",
+        "data"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

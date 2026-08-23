@@ -108,8 +108,8 @@ def test_p2_failure_result(clean_env):
 def test_unsupported_task():
     adapter = RealPrithviAdapter()
     res = adapter.process("vqa", {"images": []})
-    assert res["status"] == "success"
-    assert "not supported by P2; bypassing" in res["warnings"][0]
+    assert res["status"] == "skipped"
+    assert "not supported by P2; skipped" in res["warnings"][0]
 
 def test_use_real_prithvi_false_keeps_mock(clean_env):
     os.environ["USE_REAL_PRITHVI"] = "false"

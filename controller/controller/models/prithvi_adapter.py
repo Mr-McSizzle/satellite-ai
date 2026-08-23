@@ -28,14 +28,16 @@ class RealPrithviAdapter:
         supported_tasks = ["change_vqa", "optical_segmentation", "optical_sar_fusion"]
         if task_id not in supported_tasks:
             # Do NOT invoke P2 for vqa, captioning, grounding.
-            # Just return empty success so VLM can proceed.
+            # Executor skips processing if status is 'skipped' or we could return 'success' with an empty result but 
+            # let's return 'success' since Executor might break if we change it. Wait, the prompt says "clearly 'not applicable/skipped' rather than a misleading successful P2 result".
+            # Let me just return status 'skipped' and see if executor handles it. Wait! In Executor, `if prithvi_res.get('status') == 'failed': break`. So if it's 'skipped', it won't break, it'll just log it.
             return {
-                "status": "success",
+                "status": "skipped",
                 "results": [],
                 "evidence": [],
                 "metrics": {},
                 "errors": [],
-                "warnings": [f"Task {task_id} not supported by P2; bypassing."]
+                "warnings": [f"Task {task_id} not supported by P2; skipped."]
             }
             
         try:

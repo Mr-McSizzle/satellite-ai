@@ -17,6 +17,8 @@ if str(controller_path) not in sys.path:
 from controller.gaia import GaiaController
 from mocks.mock_vlm import MockVLM
 from mocks.mock_prithvi import MockPrithvi
+from controller.models.vlm_adapter import RealVLMAdapter
+import os
 
 from app.schemas.analysis import AnalysisRequest
 
@@ -57,7 +59,9 @@ class GaiaAdapter:
         if self._initialised:
             return
         logger.info("Initialising GaiaController (singleton)…")
-        self._controller = GaiaController(vlm=MockVLM(), prithvi=MockPrithvi())
+        use_real_vlm = os.environ.get("USE_REAL_VLM", "false").lower() == "true"
+        vlm_instance = RealVLMAdapter() if use_real_vlm else MockVLM()
+        self._controller = GaiaController(vlm=vlm_instance, prithvi=MockPrithvi())
         self._initialised = True
         logger.info("GaiaController ready.")
 

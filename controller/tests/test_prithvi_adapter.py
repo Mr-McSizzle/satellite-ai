@@ -42,6 +42,9 @@ def test_change_vqa(clean_env):
     req = {"images": [{"reference": "img1.tif", "modality": "optical"}, {"reference": "img2.tif", "modality": "optical"}]}
     res = adapter.process("change_vqa", req)
     
+    if res["status"] != "success":
+        print(f"FAILED WITH ERRORS: {res.get('errors')}")
+        
     assert res["status"] == "success"
     assert res["evidence"][0]["data"]["uri"] == "out.tif"
     assert res["metadata"]["p2_confidence"] == 0.88

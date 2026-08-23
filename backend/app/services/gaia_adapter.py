@@ -18,6 +18,7 @@ from controller.gaia import GaiaController
 from mocks.mock_vlm import MockVLM
 from mocks.mock_prithvi import MockPrithvi
 from controller.models.vlm_adapter import RealVLMAdapter
+from controller.models.prithvi_adapter import RealPrithviAdapter
 import os
 
 from app.schemas.analysis import AnalysisRequest
@@ -61,7 +62,11 @@ class GaiaAdapter:
         logger.info("Initialising GaiaController (singleton)…")
         use_real_vlm = os.environ.get("USE_REAL_VLM", "false").lower() == "true"
         vlm_instance = RealVLMAdapter() if use_real_vlm else MockVLM()
-        self._controller = GaiaController(vlm=vlm_instance, prithvi=MockPrithvi())
+        
+        use_real_prithvi = os.environ.get("USE_REAL_PRITHVI", "false").lower() == "true"
+        prithvi_instance = RealPrithviAdapter() if use_real_prithvi else MockPrithvi()
+        
+        self._controller = GaiaController(vlm=vlm_instance, prithvi=prithvi_instance)
         self._initialised = True
         logger.info("GaiaController ready.")
 

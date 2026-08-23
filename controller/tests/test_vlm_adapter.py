@@ -35,13 +35,21 @@ def test_missing_image(clean_env, tmp_path):
     assert res["status"] == "failed"
     assert "Image path missing" in res["errors"][0]
 
-def test_unsupported_optical_sar_fusion(clean_env, tmp_path):
+def test_optical_sar_fusion_mapped_to_vqa(clean_env, tmp_path):
     os.environ["P1_VLM_PATH"] = str(tmp_path)
-    sys.modules["inference"] = MagicMock()
+    
+    mock_inference = MagicMock()
+    mock_inference.vlm_answer.return_value = {"answer": "fusion", "metadata": {}}
+    sys.modules["inference"] = mock_inference
+    
+    # Needs valid image so it reaches the P1 call
+    open(str(tmp_path / "img.tif"), "w").close()
+    
     adapter = RealVLMAdapter()
-    res = adapter.run("optical_sar_fusion", {"images": []})
-    assert res["status"] == "failed"
-    assert "no dedicated optical_sar_fusion task" in res["errors"][0]
+    res = adapter.run("optical_sar_fusion", {"images": [{"reference": str(tmp_path / "img.tif")}]})
+    
+    mock_inference.vlm_answer.assert_called_once()
+    assert mock_inference.vlm_answer.call_args[1]["task"] == "vqa"
 
 @patch("controller.models.vlm_adapter.Path.exists", return_value=True)
 def test_task_mapping_and_success_result(mock_exists, clean_env, tmp_path):

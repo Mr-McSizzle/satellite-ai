@@ -60,20 +60,11 @@ class RealVLMAdapter:
             "vqa": "vqa",
             "captioning": "caption",
             "grounding": "grounding",
-            "change_vqa": "change_vqa"
+            "change_vqa": "change_vqa",
+            "optical_sar_fusion": "vqa"
         }
         
-        if task_id == "optical_sar_fusion":
-            return {
-                "status": "failed",
-                "answer": None,
-                "evidence": [],
-                "metadata": {},
-                "errors": ["P1 currently has no dedicated optical_sar_fusion task."],
-                "warnings": []
-            }
-            
-        p1_task = task_map.get(task_id, task_id)
+        p1_task = task_map.get(task_id, "vqa")
             
         # 5. Evidence
         evidence = None
@@ -81,9 +72,30 @@ class RealVLMAdapter:
             "evidence_available": bool(context and context.get("prithvi_evidence"))
         }
 
+        prithvi_evidence = context.get("prithvi_evidence", []) if context else []
+        p2_context_str = ""
+        
+        if prithvi_evidence:
+            from controller.models.p2_vlm_context import build_p2_vlm_context
+            for item in prithvi_evidence:
+                if item.get("type") == "prithvi_mask" and "p2_task" in item.get("data", {}):
+                    p2_context_str = build_p2_vlm_context(item.get("data"))
+                    if p2_context_str:
+                        metadata["p2_context_used"] = True
+                        metadata["p2_context_source"] = "prithvi_p2"
+                        # We specifically store mask path in metadata as per instructions
+                        mask_path = item["data"].get("uri")
+                        if mask_path:
+                            metadata["p2_mask_path"] = mask_path
+                        break
+                        
+        combined_question = question
+        if p2_context_str:
+            combined_question = f"{p2_context_str}\n\n[USER QUESTION]\n{question}"
+
         # 6. Call P1
         try:
-            p1_result = vlm_answer(images=images, question=question, evidence=evidence, task=p1_task)
+            p1_result = vlm_answer(images=images, question=combined_question, evidence=evidence, task=p1_task)
         except Exception as e:
             return {
                 "status": "failed",

@@ -96,15 +96,6 @@ class RealPrithviAdapter:
         # Adapt P2 result to GAIA result
         gaia_status = "success" if p2_res.status == "success" else "failed"
         
-        evidence = []
-        if getattr(p2_res, "evidence_mask_path", None):
-            evidence.append({
-                "type": "prithvi_mask",
-                "data": {
-                    "uri": p2_res.evidence_mask_path
-                }
-            })
-            
         metrics_dict = {}
         if getattr(p2_res, "metrics", None):
             metrics_dict = {
@@ -112,6 +103,18 @@ class RealPrithviAdapter:
                 "cloud_penalty": getattr(p2_res.metrics, "cloud_penalty", None),
                 "terrain_penalty": getattr(p2_res.metrics, "terrain_penalty", None),
             }
+            
+        evidence = []
+        if getattr(p2_res, "evidence_mask_path", None):
+            evidence.append({
+                "type": "prithvi_mask",
+                "data": {
+                    "uri": p2_res.evidence_mask_path,
+                    "p2_task": getattr(p2_res, "task", None),
+                    "p2_confidence": getattr(p2_res, "confidence", None),
+                    "p2_metrics": metrics_dict
+                }
+            })
             
         metadata = {
             "p2_task": getattr(p2_res, "task", None),

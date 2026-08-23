@@ -60,11 +60,19 @@ class GaiaAdapter:
         if self._initialised:
             return
         logger.info("Initialising GaiaController (singleton)…")
-        use_real_vlm = os.environ.get("USE_REAL_VLM", "false").lower() == "true"
-        vlm_instance = RealVLMAdapter() if use_real_vlm else MockVLM()
+        demo_mode = os.environ.get("DEMO_MODE", "false").lower() == "true"
         
-        use_real_prithvi = os.environ.get("USE_REAL_PRITHVI", "false").lower() == "true"
-        prithvi_instance = RealPrithviAdapter() if use_real_prithvi else MockPrithvi()
+        if demo_mode:
+            logger.info("DEMO_MODE is TRUE. Using GeminiDemoAdapter.")
+            from controller.models.gemini_demo_adapter import GeminiDemoAdapter
+            vlm_instance = GeminiDemoAdapter()
+            prithvi_instance = MockPrithvi() # Prithvi is mocked or skipped because VLM does everything
+        else:
+            use_real_vlm = os.environ.get("USE_REAL_VLM", "false").lower() == "true"
+            vlm_instance = RealVLMAdapter() if use_real_vlm else MockVLM()
+            
+            use_real_prithvi = os.environ.get("USE_REAL_PRITHVI", "false").lower() == "true"
+            prithvi_instance = RealPrithviAdapter() if use_real_prithvi else MockPrithvi()
         
         self._controller = GaiaController(vlm=vlm_instance, prithvi=prithvi_instance)
         self._initialised = True

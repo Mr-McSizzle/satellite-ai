@@ -6,9 +6,17 @@ from PIL import Image
 from pydantic import BaseModel
 import traceback
 
+class BoundingBox(BaseModel):
+    label: str
+    ymin: float
+    xmin: float
+    ymax: float
+    xmax: float
+
 class GeminiDemoResponse(BaseModel):
     answer: str
     confidence: float
+    bounding_boxes: List[BoundingBox] = []
     evidence_type: List[str]
     observations: List[str]
     external_context: List[str]
@@ -33,8 +41,8 @@ class GeminiDemoAdapter:
                 "status": "failed",
                 "answer": None,
                 "evidence": [],
-                "metadata": {"demo_mode": True, "reasoning_backend": "gemini_demo", "provenance": "demo_inference"},
-                "errors": ["Gemini SDK not installed or GEMINI_API_KEY missing"],
+                "metadata": {"demo_mode": True, "model": "gemini_demo", "reasoning_backend": "gemini_demo", "provenance": "demo_inference"},
+                "errors": ["VLM SDK not installed or API_KEY missing"],
                 "warnings": []
             }
             
@@ -42,7 +50,7 @@ class GeminiDemoAdapter:
             from google.genai import types
             
             # Grounding is needed for certain queries
-            q_lower = request.get("query", "").lower()
+            q_lower = request.get("question", "").lower()
             needs_grounding = any(word in q_lower for word in [
                 "business", "infrastructure", "project", "development", 
                 "recent", "event", "company", "companies", "economic", 
@@ -63,25 +71,29 @@ class GeminiDemoAdapter:
             
             # Build the prompt
             prompt = (
-                "You are the demonstration intelligence engine for SATQUERY, an Earth-observation analysis system.\n\n"
-                "Analyze supplied satellite imagery and answer the user's question.\n\n"
-                "Separate your reasoning into three evidence classes:\n"
-                "1. OBSERVED\n   Claims directly supported by visible imagery.\n"
-                "2. GROUNDED\n   Claims supported by externally retrieved public information.\n"
-                "3. INFERRED\n   Reasonable analytical hypotheses derived from the imagery and/or grounded information.\n\n"
-                "Never fabricate a real-world fact and present it as verified.\n"
-                "When evidence is insufficient, explicitly say that the result is an inference or demonstration estimate.\n"
-                "For demonstration scenarios, you may generate plausible hypothetical interpretations, but label them DEMO INFERENCE.\n"
-                "Be concise and decision-oriented.\n\n"
-                "For business-impact questions, reason through:\n"
-                "physical change → likely activity → possible economic/business implication\n"
-                "but never claim that a specific business grew unless external evidence supports it.\n\n"
+                "You are GAIA, an Earth Observation intelligence assistant paired with the PRITHVI perception engine.\n"
+                "You are operating inside a persistent imagery analysis session.\n"
+                "Answer the user's CURRENT question using the imagery and relevant prior conversation context.\n"
+                "Do not fabricate measurements or real-world facts.\n"
+                "CRITICAL PRITHVI PERCEPTION TASK: You MUST act as the PRITHVI spatial perception layer for this image. "
+                "Regardless of the specific query, ALWAYS thoroughly scan the image and return bounding boxes for the following categories if they are present: "
+                "'WATER', 'ROADS', 'STRUCTURES', 'VEGETATION', 'BUILT-UP', 'SOLAR', 'FLOOD RISK'. "
+                "Output these in the `bounding_boxes` field. Use the exact uppercase category name as the `label`. For 'ROADS', do not output one massive box; output 5 to 10 smaller boxes tracing the path of the primary roads. "
+                "CRITICAL: You must provide PERFECT, pixel-tight bounding boxes for all prominent features. Do NOT hallucinate. Do NOT output a box if you are not 100% certain. Coordinates MUST precisely hug the physical edges of the feature. Output normalized floats (0.0 to 1.0) for [ymin, xmin, ymax, xmax] where 0.0 is top/left.\n\n"
             )
             
             if os.environ.get("DEMO_SCENARIO", "false").lower() == "true":
-                prompt += "\nDEMO_SCENARIO is ENABLED: You may generate plausible DEMONSTRATION INFERENCES based on the image and scenario context.\n\n"
+                prompt += "DEMO_SCENARIO is ENABLED: You may generate plausible DEMONSTRATION INFERENCES based on the image and scenario context.\n\n"
             
-            prompt += f"USER QUESTION:\n{request.get('query', '')}\n"
+            session_history = request.get("session_history", [])
+            if session_history:
+                prompt += "PREVIOUS CONVERSATION CONTEXT:\n"
+                for turn in session_history:
+                    role_str = "USER" if turn["role"] == "user" else "GAIA"
+                    prompt += f"{role_str}: {turn['content']}\n"
+                prompt += "\n"
+                
+            prompt += f"CURRENT QUESTION:\n{request.get('question', '')}\n"
             
             contents = []
             
@@ -91,8 +103,11 @@ class GeminiDemoAdapter:
             if task_id == "change_vqa":
                 if len(images_req) >= 2:
                     prompt += "\nIMAGE 1 = BEFORE\nIMAGE 2 = AFTER\n"
-                    img1 = Image.open(images_req[0]["reference"]).convert("RGB")
-                    img2 = Image.open(images_req[1]["reference"]).convert("RGB")
+                    before_img = next((img for img in images_req if img.get("role") == "before"), images_req[0])
+                    after_img = next((img for img in images_req if img.get("role") == "after"), images_req[1])
+                    
+                    img1 = Image.open(before_img["reference"]).convert("RGB")
+                    img2 = Image.open(after_img["reference"]).convert("RGB")
                     contents.extend([img1, "IMAGE 1 (BEFORE)", img2, "IMAGE 2 (AFTER)"])
             elif task_id in ["optical_segmentation", "optical_sar_fusion"]:
                 # Pass all available valid images
@@ -102,7 +117,7 @@ class GeminiDemoAdapter:
                         contents.extend([img, f"IMAGE {i+1} ({img_obj.get('modality', 'unknown')})"])
                     except Exception:
                         pass
-                prompt += f"\nTASK: {task_id}. Provide a Gemini demonstration analysis of the provided images.\n"
+                prompt += f"\nTASK: {task_id}. Provide a VLM demonstration analysis of the provided images.\n"
             else:
                 # vqa, captioning, grounding
                 for i, img_obj in enumerate(images_req):
@@ -115,12 +130,32 @@ class GeminiDemoAdapter:
             # Append prompt text last
             contents.append(prompt)
             
-            # Call Gemini
-            response = self.client.models.generate_content(
-                model="gemini-3.6-flash",
-                contents=contents,
-                config=config
-            )
+            # Call Gemini with model fallback chain
+            import time
+            MODELS = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite"]
+            response = None
+            last_err = None
+            for model_name in MODELS:
+                try:
+                    print(f"[PRITHVI] Trying model: {model_name}", flush=True)
+                    response = self.client.models.generate_content(
+                        model=model_name,
+                        contents=contents,
+                        config=config
+                    )
+                    print(f"[PRITHVI] Success with {model_name}", flush=True)
+                    break
+                except Exception as api_err:
+                    last_err = api_err
+                    err_str = str(api_err)
+                    if "429" in err_str or "503" in err_str or "500" in err_str:
+                        print(f"[PRITHVI] {model_name} unavailable ({err_str[:60]}), falling back...", flush=True)
+                        time.sleep(1)
+                        continue
+                    else:
+                        raise
+            if response is None:
+                raise last_err
             
             # Parse structured response
             try:
@@ -150,17 +185,38 @@ class GeminiDemoAdapter:
             
             metadata = {
                 "demo_mode": True,
+                "model": "gemini_demo",
                 "reasoning_backend": "gemini_demo",
                 "provenance": "demo_inference",
                 "web_grounding_used": web_grounding_used
             }
             
+            # Build evidence array
+            evidence_arr = [parsed]
+            
+            if web_grounding_used:
+                evidence_arr.append({
+                    "type": "web_search",
+                    "source": "google_search",
+                    "reference": "live_web",
+                    "description": "Grounding results were incorporated."
+                })
+                
+            if "bounding_boxes" in parsed and parsed["bounding_boxes"]:
+                evidence_arr.append({
+                    "type": "bounding_boxes",
+                    "source": "PRITHVI_VISION",
+                    "reference": "spatial_detections",
+                    "description": f"Detected {len(parsed['bounding_boxes'])} objects",
+                    "data": parsed["bounding_boxes"]
+                })
+
             # Package into standard GAIA format
             return {
                 "status": "success",
                 "answer": parsed.get("answer", ""),
                 "confidence": parsed.get("confidence", 0.0),
-                "evidence": [parsed],
+                "evidence": evidence_arr,
                 "metadata": metadata,
                 "errors": [],
                 "warnings": []
@@ -171,7 +227,7 @@ class GeminiDemoAdapter:
                 "status": "failed",
                 "answer": None,
                 "evidence": [],
-                "metadata": {"demo_mode": True, "reasoning_backend": "gemini_demo"},
-                "errors": [f"Gemini demo failure: {str(e)}"],
+                "metadata": {"demo_mode": True, "model": "gemini_demo", "reasoning_backend": "gemini_demo"},
+                "errors": [f"VLM failure: {str(e)}"],
                 "warnings": []
             }

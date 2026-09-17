@@ -22,6 +22,12 @@ def clean_env():
     
     GaiaAdapter._instance = None # Reset singleton
     
+    # Re-inject mocks if deleted by other tests
+    if "inference" not in sys.modules:
+        sys.modules["inference"] = MagicMock()
+    if "fusion_engine" not in sys.modules:
+        sys.modules["fusion_engine"] = MagicMock()
+        
     yield
     
     GaiaAdapter._instance = None

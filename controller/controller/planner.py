@@ -24,8 +24,9 @@ class TaskPlanner:
         if not task or not isinstance(task, str):
             raise ValueError("Task must be a non-empty string.")
             
-        if task not in self.mappings:
-            raise ValueError(f"Unsupported task for planning: {task}")
+        # For arbitrary conversational questions that don't match specific workflows, default to vqa
+        if task == "unknown" or task not in self.mappings:
+            task = "vqa"
             
         return {
             "task": task,

@@ -60,7 +60,7 @@ function normalizeEvidence(items: BackendAnalysisResponse["evidence"]): BackendE
       "data" in item &&
       item.data &&
       typeof item.data === "object" &&
-      !Array.isArray(item.data)
+      item.data
     ) {
       return item;
     }
@@ -113,7 +113,7 @@ function mapTrace(trace: BackendExecutionTrace): TraceStep[] {
   ];
 }
 
-export async function runBackendAnalysis(query: string, images: UploadedImage[]): Promise<AnalysisResult> {
+export async function runBackendAnalysis(query: string, images: UploadedImage[], sessionId?: string): Promise<AnalysisResult> {
   const requestImages = images.map((image) => {
     if (!image.reference) {
       throw new Error("Image upload did not produce a backend reference.");
@@ -122,14 +122,16 @@ export async function runBackendAnalysis(query: string, images: UploadedImage[])
     return {
       reference: image.reference,
       modality: image.modality,
+      role: image.role,
     };
   });
 
-  const response = await submitAnalysis(query, requestImages);
+  const response = await submitAnalysis(query, requestImages, sessionId);
   const evidence = normalizeEvidence(response.evidence);
   const executionTrace = normalizeTrace(response.execution_trace);
 
   return {
+    session_id: response.session_id,
     status: response.status,
     task: response.task,
     answer: response.answer,

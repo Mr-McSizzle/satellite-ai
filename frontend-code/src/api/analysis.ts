@@ -8,8 +8,14 @@ import type {
 export function submitAnalysis(
   query: string,
   images: BackendImageInfo[],
+  sessionId?: string,
 ): Promise<BackendAnalysisResponse> {
-  const body: BackendAnalysisRequest = { query, images };
+  const body: BackendAnalysisRequest & { session_id?: string } = { query };
+  if (sessionId) {
+    body.session_id = sessionId;
+  } else {
+    body.images = images;
+  }
 
   return apiRequest<BackendAnalysisResponse>("/v1/analyze", {
     method: "POST",

@@ -53,6 +53,7 @@ export interface UploadedImage {
   height: number;
   mayCarryGeoMetadata: boolean;
   observationDate?: string;
+  role?: string;
 }
 
 export interface EvidenceItem {
@@ -71,6 +72,7 @@ export interface TraceStep {
 export interface BackendImageInfo {
   reference: string;
   modality: ImageModality;
+  role?: string;
 }
 
 export interface BackendEvidenceItem {
@@ -88,11 +90,13 @@ export interface BackendExecutionTrace {
 }
 
 export interface BackendAnalysisRequest {
+  session_id?: string;
   query: string;
-  images: BackendImageInfo[];
+  images?: BackendImageInfo[];
 }
 
 export interface BackendAnalysisResponse {
+  session_id?: string;
   status: "success" | "failed";
   task: BackendTask;
   answer: string;
@@ -102,6 +106,7 @@ export interface BackendAnalysisResponse {
 }
 
 export interface AnalysisResult {
+  session_id?: string;
   status: BackendAnalysisResponse["status"];
   task: BackendTask;
   answer: string;

@@ -24,6 +24,9 @@ class GaiaController:
         self.audit_engine = AuditEngine()
         
     def run(self, request: dict) -> dict:
+        import sys
+        print(f"[GAIA-DEBUG] run() called with question: {request.get('question','')[:80]}", flush=True)
+        print(f"[GAIA-DEBUG] images count: {len(request.get('images', []))}", flush=True)
         trace = TraceRecorder()
         
         output = {
@@ -47,6 +50,16 @@ class GaiaController:
         try:
             class_res = self.classifier.classify(question)
             task = class_res.task
+            if task == "unknown" or task not in self.planner.mappings:
+                task = "vqa"
+                
+            # Bi-temporal session override: if we have before and after images, force change_vqa
+            images = request.get("images", [])
+            has_before = any(img.get("role") == "before" for img in images)
+            has_after = any(img.get("role") == "after" for img in images)
+            if has_before and has_after:
+                task = "change_vqa"
+                
             output["task"] = task
         except Exception as e:
             task = "unknown"
@@ -70,6 +83,7 @@ class GaiaController:
             return output
         
         val_res = self.validator.validate(request, task)
+        print(f"[GAIA-DEBUG] validation valid={val_res.valid}, errors={val_res.errors}", flush=True)
         trace.set_validation({
             "valid": val_res.valid,
             "errors": val_res.errors,
@@ -97,7 +111,9 @@ class GaiaController:
             self._apply_audit(request, output)
             return output
             
+        print(f"[GAIA-DEBUG] About to call executor.execute({task})", flush=True)
         exec_res = self.executor.execute(task, request)
+        print(f"[GAIA-DEBUG] executor returned status={exec_res.get('status')}, answer_len={len(str(exec_res.get('answer','')))}", flush=True)
         
         tool_confidences = []
         for tool_res in exec_res.get("tool_results", []):

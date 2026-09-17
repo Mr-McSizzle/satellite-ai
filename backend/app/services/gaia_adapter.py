@@ -61,6 +61,7 @@ class GaiaAdapter:
             return
         logger.info("Initialising GaiaController (singleton)…")
         demo_mode = os.environ.get("DEMO_MODE", "false").lower() == "true"
+        logger.info(f"DEMO_MODE env raw='{os.environ.get('DEMO_MODE', 'NOT SET')}', resolved={demo_mode}")
         
         if demo_mode:
             logger.info("DEMO_MODE is TRUE. Using GeminiDemoAdapter.")
@@ -82,18 +83,20 @@ class GaiaAdapter:
     # Public interface
     # ------------------------------------------------------------------
 
-    def run(self, request: AnalysisRequest) -> dict:
+    def run(self, request: AnalysisRequest, history: list = None) -> dict:
         """
         Converts the backend AnalysisRequest into a GAIA input dict and
         calls GaiaController.run().  Returns the raw GAIA output dict.
         """
         gaia_input = {
             "question": request.query,
+            "session_history": history or [],
             "images": [
                 {
                     "reference": img.reference,
                     "format": _derive_format(img.reference),
                     "modality": img.modality,
+                    "role": img.role,
                 }
                 for img in request.images
             ],

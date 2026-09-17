@@ -1,4 +1,4 @@
-from typing import List, Any, Dict
+from typing import List, Any, Dict, Optional
 from pydantic import BaseModel, Field, field_validator
 
 ALLOWED_IMAGE_EXTENSIONS = (".tif", ".tiff", ".png", ".jpg", ".jpeg")
@@ -11,6 +11,7 @@ class ImageInfo(BaseModel):
     """Describes a single input image for GAIA analysis."""
     reference: str = Field(..., description="Path or URI identifying the image.")
     modality: str = Field(..., description="Image modality: 'optical' or 'SAR'.")
+    role: Optional[str] = Field(None, description="Role of the image in bi-temporal context: 'before' or 'after'.")
 
     @field_validator("modality")
     @classmethod
@@ -37,9 +38,10 @@ class ImageInfo(BaseModel):
 
 class AnalysisRequest(BaseModel):
     """Request body for POST /api/v1/analyze."""
+    session_id: Optional[str] = Field(None, description="Session ID for conversational analysis.")
     query: str = Field(..., min_length=1, description="Natural-language query. Cannot be empty.")
-    images: List[ImageInfo] = Field(
-        ..., min_length=1, description="List of image descriptors. At least one required."
+    images: Optional[List[ImageInfo]] = Field(
+        None, description="List of image descriptors. Required if no session_id is provided."
     )
 
     @field_validator("query")
@@ -56,6 +58,7 @@ class AnalysisRequest(BaseModel):
 
 class AnalysisResponse(BaseModel):
     """Response body returned by POST /api/v1/analyze."""
+    session_id: Optional[str] = Field(None, description="Session ID for conversational analysis.")
     status: str = Field(..., description="Execution status: 'success' or 'failed'.")
     task: str = Field(..., description="GAIA task ID classified for this query.")
     answer: str = Field(..., description="Text answer produced by the analysis pipeline.")

@@ -39,3 +39,10 @@ if settings.BACKEND_CORS_ORIGINS:
 
 # Register API Router
 app.include_router(api_router)
+
+# Mount Offline Engine
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent.parent))
+from sentinel_index.api import app as offline_app
+app.mount("/offline", offline_app)

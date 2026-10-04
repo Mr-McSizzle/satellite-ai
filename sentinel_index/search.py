@@ -43,7 +43,7 @@ class SearchEngine:
                 continue
             r = rows[fid]
             # format the chip path relative to the store so the frontend can load it
-            chip_url = f"/api/v1/tiles/chip/{r['scene_id']}_{r['row']}_{r['col']}.png"
+            chip_url = f"/offline/api/v1/tiles/chip/{r['scene_id']}_{r['row']}_{r['col']}.png"
             results.append({
                 "tile_id": r["tile_id"],
                 "scene_id": r["scene_id"],

@@ -105,6 +105,60 @@ def ingest_scene(scene_path: Path, index: faiss.Index):
     )
     print(f"[ingest] {scene_id} done.")
 
+def ingest_user_upload(img_path: Path, index: faiss.Index = None) -> str:
+    """Ingests an arbitrary user upload (PNG/JPG/TIF) into the FAISS offline archive as a single tile."""
+    from uuid import uuid4
+    import datetime
+    
+    scene_id = f"UPLOAD_{uuid4().hex[:8]}"
+    print(f"[ingest] Ingesting user upload {img_path.name} as {scene_id}...")
+    
+    # Open image (could be TIF, PNG, JPG)
+    try:
+        img = Image.open(img_path).convert("RGB")
+    except Exception as e:
+        print(f"[ingest] Failed to read {img_path}: {e}")
+        return None
+        
+    # Resize to something reasonable for CLIP (it takes 224x224 typically, but we use 64x64 chips for visual consistency in UI)
+    img_chip = img.resize((config.TILE_PX, config.TILE_PX))
+    chip_name = f"{scene_id}_0_0.png"
+    img_chip.save(config.CHIPS_DIR / chip_name)
+    
+    conn = db.get_connection()
+    now_str = datetime.datetime.now().isoformat()
+    conn.execute(
+        "INSERT INTO scenes (scene_id, datetime, platform, cloud_cover, mgrs_tile) VALUES (?, ?, ?, ?, ?)",
+        (scene_id, now_str, "USER_UPLOAD", 0.0, "USER")
+    )
+    
+    # Embed and add to FAISS
+    if index is None:
+        index = load_index()
+        
+    start_id = index.ntotal
+    emb = embed.embed_images([img_chip])
+    index.add(emb)
+    
+    tile_id = f"{scene_id}_0_0"
+    conn.execute(
+        """INSERT INTO tiles (
+            tile_id, scene_id, row, col, valid_frac, cloud_frac,
+            ndvi, ndwi, ndbi, frac_veg, frac_water, frac_built, brightness, faiss_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (tile_id, scene_id, 0, 0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, int(start_id))
+    )
+    
+    # Flush index if we loaded it here
+    faiss.write_index(index, str(config.FAISS_PATH))
+    
+    # Reload search engine singleton if it's imported (to reflect new data)
+    import sys
+    if "sentinel_index.api" in sys.modules:
+        sys.modules["sentinel_index.api"].engine_search.reload()
+        
+    return tile_id
+
 def run():
     db.init_db()
     index = load_index()

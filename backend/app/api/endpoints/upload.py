@@ -58,6 +58,17 @@ async def upload_image(
     finally:
         await file.close()
 
+    # Automatically add to offline archive! (PS 26227 God Mode)
+    import sys
+    from pathlib import Path as SysPath
+    sys.path.append(str(SysPath(__file__).parent.parent.parent.parent.parent))
+    try:
+        from sentinel_index.ingest import ingest_user_upload
+        ingest_user_upload(destination)
+    except Exception as e:
+        import logging
+        logging.getLogger("app").error(f"Failed to auto-ingest user upload: {e}")
+
     return UploadResponse(
         reference=str(destination),
         filename=original_name,

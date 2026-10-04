@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <!-- Deep space background -->
+  <circle cx="128" cy="128" r="128" fill="#02050a"/>
+  
+  <!-- Outer grid/radar rings -->
+  <circle cx="128" cy="128" r="100" fill="none" stroke="#22d3ee" stroke-width="4" stroke-dasharray="10 10" opacity="0.4"/>
+  <circle cx="128" cy="128" r="70" fill="none" stroke="#22d3ee" stroke-width="2" opacity="0.6"/>
+  
+  <!-- Earth / Core -->
+  <circle cx="128" cy="128" r="45" fill="#0ea5e9" opacity="0.8"/>
+  <circle cx="128" cy="128" r="45" fill="none" stroke="#38bdf8" stroke-width="4"/>
+  
+  <!-- Satellite Orbit Path -->
+  <ellipse cx="128" cy="128" rx="110" ry="30" fill="none" stroke="#f59e0b" stroke-width="3" transform="rotate(-45 128 128)" opacity="0.8"/>
+  
+  <!-- Satellite Body -->
+  <g transform="translate(185, 71) rotate(45)">
+    <!-- Solar panels -->
+    <rect x="-30" y="-8" width="20" height="16" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/>
+    <rect x="10" y="-8" width="20" height="16" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/>
+    <!-- Main bus -->
+    <rect x="-10" y="-12" width="20" height="24" rx="4" fill="#f8fafc"/>
+    <circle cx="0" cy="0" r="5" fill="#f59e0b"/>
+  </g>
+  
+  <!-- Target crosshair -->
+  <path d="M128,70 L128,95 M128,161 L128,186 M70,128 L95,128 M161,128 L186,128" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"/>
+</svg>

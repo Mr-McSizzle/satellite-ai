@@ -16,7 +16,7 @@ function SuperProjectWrapper() {
   return (
     <div className="h-screen w-screen relative overflow-hidden bg-[#02050a]">
       {/* Global Mode Switcher - Highest Z-Index */}
-      <div className="absolute top-2 left-1/2 -translate-x-1/2 z-[100] flex bg-[#060b13]/90 backdrop-blur-md border border-[#1e293b] rounded-full p-1 shadow-[0_0_20px_rgba(34,211,238,0.1)]">
+      <div className="absolute top-16 left-1/2 -translate-x-1/2 z-[100] flex bg-[#060b13]/90 backdrop-blur-md border border-[#1e293b] rounded-full p-1 shadow-[0_0_20px_rgba(34,211,238,0.1)]">
         <button
           onClick={() => setMode('CLOUD')}
           className={`flex items-center gap-2 px-6 py-1.5 rounded-full font-mono text-[10px] transition-all duration-300 ${

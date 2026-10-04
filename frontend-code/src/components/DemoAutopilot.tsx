@@ -9,11 +9,11 @@ export function DemoAutopilot() {
     { type: 'wait', ms: 7000, subtitle: 'Hello. Welcome to the demonstration of GAIA, our Geospatial Artificial Intelligence Assistant.' },
     { type: 'wait', ms: 7000, subtitle: 'To adhere strictly to PS 26227, this core platform operates entirely on-premises on an air-gapped machine.' },
     { type: 'click', selector: '#demo-mode-offline', subtitle: 'Let\'s begin in the Offline Archive, the heart of our local intelligence database.' },
-    { type: 'wait', ms: 2000, subtitle: 'Let\'s begin in the Offline Archive, the heart of our local intelligence database.' },
+    { type: 'wait', ms: 3000, subtitle: 'Let\'s begin in the Offline Archive, the heart of our local intelligence database.' },
     { type: 'click', selector: '[data-demo-nav="SEARCH"]', subtitle: 'Because we use a localized Vision Transformer, analysts can query historical tiles using natural language.' },
     { type: 'wait', ms: 4000, subtitle: 'Because we use a localized Vision Transformer, analysts can query historical tiles using natural language.' },
     { type: 'type', selector: '#demo-search-input', text: 'newly built structures near water', subtitle: 'When we search for "newly built structures near water"...' },
-    { type: 'wait', ms: 1000, subtitle: '...the local model instantly retrieves matching tiles based on semantic vector similarity.' },
+    { type: 'wait', ms: 3000, subtitle: '...the local model instantly retrieves matching tiles based on semantic vector similarity.' },
     { type: 'click', selector: '#demo-search-btn', subtitle: '...the local model instantly retrieves matching tiles based on semantic vector similarity.' },
     { type: 'wait', ms: 7000, subtitle: '...the local model instantly retrieves matching tiles based on semantic vector similarity.' },
     { type: 'click', selector: '[data-demo-similar]', index: 0, subtitle: 'Furthermore, we support unsupervised clustering. By selecting a tile and clicking "Find Similar"...' },
@@ -30,7 +30,7 @@ export function DemoAutopilot() {
     { type: 'click', selector: '[data-demo-reject]', index: 0, subtitle: 'This human-in-the-loop feedback dynamically reranks future queues.' },
     { type: 'wait', ms: 4000, subtitle: 'Finally, let\'s look at the Interactive Mode to demonstrate the future of geospatial UX.' },
     { type: 'click', selector: '#demo-mode-interactive', subtitle: 'Finally, let\'s look at the Interactive Mode to demonstrate the future of geospatial UX.' },
-    { type: 'wait', ms: 2000, subtitle: 'I will now upload a local file to demonstrate.' },
+    { type: 'wait', ms: 3000, subtitle: 'I will now upload a local file to demonstrate.' },
     { type: 'wait', ms: 1000, subtitle: '' } // Clear subtitle at the end
   ];
 

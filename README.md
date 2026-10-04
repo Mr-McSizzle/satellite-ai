@@ -68,6 +68,7 @@ Please refer to the following documents for deep dives into the system design, o
 - ⚙️ **[Ingestion Procedure](docs/ingestion.md)**: Step-by-step instructions to build the offline index from scratch or dynamically append new imagery.
 - 📜 **[Model & Dataset Provenance](docs/provenance.md)**: Origins, licenses, and packaging information for the GAIA models and baseline datasets.
 - 📊 **[Reproducible Evaluation Report](docs/evaluation.md)**: Hardware specifications, query latencies, footprint, and index build times for the offline system.
+- 📦 **[Reproducibility Package](reproducibility/README.md)**: Manifests and scripts to stage the wheelhouse and model weights for 100% offline installation.
 
 ---
 

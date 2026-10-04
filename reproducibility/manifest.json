@@ -1,0 +1,26 @@
+{
+  "project": "GAIA (Geospatial Artificial Intelligence Assistant)",
+  "version": "1.0.0",
+  "models": [
+    {
+      "id": "RemoteCLIP-ViT-B-32",
+      "filename": "RemoteCLIP-ViT-B-32.pt",
+      "url": "https://huggingface.co/chendelong/RemoteCLIP/resolve/main/RemoteCLIP-ViT-B-32.pt",
+      "checksum_sha256": "4b87e2b7a0d1b3337a7b97e9373cf58bb0db917c9fb254ea8f203eb30491a6c4",
+      "size_bytes": 605208421,
+      "license": "MIT"
+    }
+  ],
+  "dependencies": {
+    "backend": "backend/requirements.txt",
+    "frontend": "frontend-code/package.json"
+  },
+  "datasets": [
+    {
+      "id": "sentinel2-seed",
+      "description": "Seed optical scenes for the offline index evaluation.",
+      "source": "Copernicus Open Access Hub",
+      "license": "CC-BY-4.0 Equivalent"
+    }
+  ]
+}

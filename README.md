@@ -60,6 +60,17 @@ graph TD
 
 ---
 
+## 📚 Documentation & Deliverables
+
+Please refer to the following documents for deep dives into the system design, operations, and evaluation metrics:
+
+- 🏗️ **[Architecture Note](docs/architecture.md)**: A detailed written description of the system design and component interactions.
+- ⚙️ **[Ingestion Procedure](docs/ingestion.md)**: Step-by-step instructions to build the offline index from scratch or dynamically append new imagery.
+- 📜 **[Model & Dataset Provenance](docs/provenance.md)**: Origins, licenses, and packaging information for the GAIA models and baseline datasets.
+- 📊 **[Reproducible Evaluation Report](docs/evaluation.md)**: Hardware specifications, query latencies, footprint, and index build times for the offline system.
+
+---
+
 ## 🚀 Getting Started
 
 ### Prerequisites

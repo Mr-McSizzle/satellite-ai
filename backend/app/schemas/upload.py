@@ -7,3 +7,6 @@ class UploadResponse(BaseModel):
     reference: str = Field(..., description="Backend file reference to pass to /api/v1/analyze.")
     filename: str = Field(..., description="Original client filename.")
     modality: str = Field(..., description="Image modality: 'optical' or 'SAR'.")
+    preview_url: str | None = Field(
+        None, description="Browser-displayable PNG preview (TIFFs can't be rendered by browsers)."
+    )

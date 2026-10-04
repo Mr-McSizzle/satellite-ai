@@ -59,17 +59,20 @@ class ChangeEngine:
             change_type = None
             
             # 1. Construction / Development (Vegetation clears, Built-up rises)
-            if (d_ndvi < -NDVI_DROP_THRESH and d_ndbi > NDBI_RISE_THRESH) and \
-               (d_ndvi_next < -NDVI_DROP_THRESH and d_ndbi_next > NDBI_RISE_THRESH):
+            if (d_ndvi < -0.05 and d_ndbi > 0.02) and (d_ndvi_next < -0.05 and d_ndbi_next > 0.02):
                 change_type = "construction"
                 
             # 2. Water variation (Water index rises significantly)
-            elif (d_ndwi > NDWI_RISE_THRESH) and (d_ndwi_next > NDWI_RISE_THRESH):
+            elif (d_ndwi > 0.05) and (d_ndwi_next > 0.05):
                 change_type = "water_expansion"
                 
             # 3. Clearance (Vegetation drops, but not necessarily built)
-            elif (d_ndvi < -NDVI_DROP_THRESH) and (d_ndvi_next < -NDVI_DROP_THRESH):
+            elif (d_ndvi < -0.05) and (d_ndvi_next < -0.05):
                 change_type = "clearance"
+                
+            # 4. Generic anomaly (catch-all for demo purposes)
+            elif abs(d_ndvi) > 0.05 and abs(d_ndvi_next) > 0.05:
+                change_type = "vegetation_anomaly"
                 
             if change_type:
                 # Calculate simple confidence based on magnitude

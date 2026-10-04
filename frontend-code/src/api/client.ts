@@ -85,7 +85,7 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
   try {
     const response = await fetch(joinUrl(baseUrl, path), {
       ...requestOptions,
-      body: requestBody,
+      body: requestBody ?? null,
       headers: requestHeaders,
       signal: controller.signal,
     });

@@ -8,7 +8,7 @@ router = APIRouter()
     "/health",
     response_model=HealthCheckResponse,
     summary="Perform a health check",
-    description="Check the operational status of the SatQuery AI backend service."
+    description="Check the operational status of the Gaia AI backend service."
 )
 def get_health() -> HealthCheckResponse:
     """Returns the operational status of the service."""

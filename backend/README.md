@@ -1,6 +1,6 @@
-# SatQuery AI Backend
+# Gaia AI Backend
 
-This is the initial FastAPI-based backend framework for the SatQuery AI (SIH) project.
+This is the initial FastAPI-based backend framework for the Gaia AI (SIH) project.
 
 ## Directory Structure
 
@@ -104,6 +104,6 @@ To manually verify the health check endpoint, perform a GET request:
 ```json
 {
   "status": "ok",
-  "service": "satquery-backend"
+  "service": "gaia-backend"
 }
 ```

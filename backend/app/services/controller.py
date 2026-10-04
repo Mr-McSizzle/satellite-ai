@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, Any, List
 
 class BaseController(ABC):
-    """Abstract interface defining the behavior of a SatQuery controller.
+    """Abstract interface defining the behavior of a Gaia controller.
     
     Future VLM / Agentic controllers should implement this class.
     """
@@ -12,7 +12,7 @@ class BaseController(ABC):
         pass
 
 class MockController(BaseController):
-    """Mock implementation of the SatQuery controller.
+    """Mock implementation of the Gaia controller.
     
     Classifies the user query using keyword matching and returns mock responses.
     """

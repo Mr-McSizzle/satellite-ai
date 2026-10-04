@@ -1,5 +1,5 @@
 import { ApiError, apiRequest } from "./client";
-import type { BackendImageInfo } from "@/lib/satquery/types";
+import type { BackendImageInfo } from "@/lib/gaia/types";
 
 export class BackendUploadRequiredError extends Error {
   constructor() {
@@ -12,9 +12,15 @@ export class BackendUploadRequiredError extends Error {
 
 interface UploadResponse {
   reference?: unknown;
+  preview_url?: unknown;
   image?: {
     reference?: unknown;
   };
+}
+
+export interface UploadedImageInfo extends BackendImageInfo {
+  /** Browser-displayable PNG rendered by the backend (TIFFs can't be shown by <img>). */
+  previewUrl?: string | undefined;
 }
 
 function extractReference(payload: UploadResponse): string | null {
@@ -29,7 +35,7 @@ function extractReference(payload: UploadResponse): string | null {
   return null;
 }
 
-export async function uploadImage(file: File, modality: BackendImageInfo["modality"]): Promise<BackendImageInfo> {
+export async function uploadImage(file: File, modality: BackendImageInfo["modality"]): Promise<UploadedImageInfo> {
   const formData = new FormData();
   formData.set("file", file);
   formData.set("modality", modality);
@@ -46,7 +52,8 @@ export async function uploadImage(file: File, modality: BackendImageInfo["modali
       throw new Error("Upload response did not include an image reference.");
     }
 
-    return { reference, modality };
+    const previewUrl = typeof payload.preview_url === "string" ? payload.preview_url : undefined;
+    return { reference, modality, previewUrl };
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) {
       throw new BackendUploadRequiredError();

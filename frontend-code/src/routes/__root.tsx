@@ -77,14 +77,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "SatQuery - Earth Observation Intelligence" },
+      { title: "Gaia - Earth Observation Intelligence" },
       { name: "description", content: "Multi-modal AI for satellite imagery analysis and change detection." },
-      { name: "author", content: "SatQuery Team" },
-      { property: "og:title", content: "SatQuery" },
+      { name: "author", content: "Gaia Team" },
+      { property: "og:title", content: "Gaia" },
       { property: "og:description", content: "Multi-modal AI for satellite imagery analysis and change detection." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@SatQuery" },
+      { name: "twitter:site", content: "@Gaia" },
     ],
     links: [
       {

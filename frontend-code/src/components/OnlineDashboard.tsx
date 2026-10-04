@@ -3,8 +3,8 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Upload, Crosshair, Map, Activity, Database, ChevronRight, ActivitySquare, Terminal, Eye, Navigation, Layers, Zap, Search, SlidersHorizontal, Settings2, BarChart4, ChevronUp, ChevronDown, Satellite, ShieldAlert, Binary, CheckCircle2, AlertTriangle, Clock } from 'lucide-react';
 
 import { uploadImage } from "@/api/upload";
-import { runBackendAnalysis } from "@/lib/satquery/analysis";
-import type { UploadedImage, AnalysisResult } from "@/lib/satquery/types";
+import { runBackendAnalysis } from "@/lib/gaia/analysis";
+import type { UploadedImage, AnalysisResult } from "@/lib/gaia/types";
 
 export function OnlineDashboard() {
   // UI State
@@ -67,7 +67,7 @@ export function OnlineDashboard() {
                 name: file.name,
                 modality: "optical",
                 reference: uploaded.reference,
-                previewUrl: URL.createObjectURL(file),
+                previewUrl: uploaded.previewUrl ?? URL.createObjectURL(file),
                 sizeBytes: file.size,
                 format: file.type,
                 width: 2048,
@@ -91,12 +91,17 @@ export function OnlineDashboard() {
             return combined.slice(0, 2);
         });
         
-        if (!uploadedImagePreview) {
-          setUploadedImagePreview(URL.createObjectURL(newFiles[0]));
+        const firstUpload = newUploadedImages[0];
+        if (!uploadedImagePreview && firstUpload) {
+          setUploadedImagePreview(firstUpload.previewUrl);
         }
       } catch (err) {
-        addTrace(`UPLOAD FAILED: ${err}`);
-        setChatHistory(prev => [...prev, { role: "system", content: "File validation failed. Unsupported format." }]);
+        const msg = err instanceof Error ? err.message : String(err);
+        addTrace(`UPLOAD FAILED: ${msg}`);
+        setChatHistory(prev => [...prev, { role: "system", content: `Upload failed: ${msg}` }]);
+      } finally {
+        // Reset the input so selecting the same file again re-triggers onChange
+        e.target.value = "";
       }
     }
   };
@@ -148,12 +153,12 @@ export function OnlineDashboard() {
     
     let currentStageIndex = 0;
     const stages = ["COMPARING IMAGERY...", "ANALYZING TEMPORAL CHANGE...", "GENERATING ANSWER..."];
-    setScanStage(stages[0]);
+    setScanStage(stages[0] ?? null);
     setScanProgress(10);
     
     const animationInterval = setInterval(() => {
         currentStageIndex = Math.min(currentStageIndex + 1, stages.length - 1);
-        setScanStage(stages[currentStageIndex]);
+        setScanStage(stages[currentStageIndex] ?? null);
         setScanProgress(p => Math.min(p + 15, 95));
     }, 800);
 
@@ -261,7 +266,11 @@ export function OnlineDashboard() {
   const confValue = result?.confidence?.value != null ? Math.round(result.confidence.value * 100) : 87;
   const hasResultState = !!result;
 
-  const extractedBoxes = (result?.evidence || []).find((e: any) => e.type === "bounding_boxes")?.data || [];
+  type EvidenceBox = { label: string; xmin: number; ymin: number; xmax: number; ymax: number; [k: string]: unknown };
+  const rawBoxes = (result?.evidence || []).find((e) => e.type === "bounding_boxes")?.data;
+  const extractedBoxes: EvidenceBox[] = Array.isArray(rawBoxes)
+    ? rawBoxes.filter((b: any) => b && typeof b.label === "string")
+    : [];
   
   const renderRoadNetwork = () => {
      if (!extractedBoxes.length) return null;
@@ -469,7 +478,7 @@ export function OnlineDashboard() {
           <div className="flex items-center gap-3">
             <ActivitySquare className="size-5 text-cyan-400" />
             <div className="leading-none flex flex-col">
-              <span className="font-mono text-base font-bold tracking-[0.2em] text-white glitch-text">SATQUERY</span>
+              <span className="font-mono text-base font-bold tracking-[0.2em] text-white glitch-text">GAIA</span>
               <span className="font-mono text-[8px] tracking-[0.3em] text-cyan-500/80 mt-0.5">EARTH OBSERVATION INTELLIGENCE</span>
             </div>
           </div>
@@ -640,13 +649,13 @@ export function OnlineDashboard() {
             {(uploadedImages.length > 0 || uploadedImagePreview) ? (
               <div className={`w-full h-full flex relative z-0 transition-all duration-1000 ${isMapMode ? 'grayscale invert hue-rotate-180 contrast-125 opacity-70 sepia-[.3]' : ''}`}>
                  {uploadedImages.length === 2 && activeTimeframe === 'BEFORE' ? (
-                     <img src={uploadedImages[0].previewUrl} alt="Before" className={`w-full h-full object-cover opacity-80 transition-all duration-700 ${activeModality === 'SAR' ? 'grayscale contrast-125 brightness-110 sepia-[.2] hue-rotate-180' : ''}`} />
+                     <img src={uploadedImages[0]!.previewUrl} alt="Before" className={`w-full h-full object-cover opacity-80 transition-all duration-700 ${activeModality === 'SAR' ? 'grayscale contrast-125 brightness-110 sepia-[.2] hue-rotate-180' : ''}`} />
                  ) : uploadedImages.length === 2 && activeTimeframe === 'AFTER' ? (
-                     <img src={uploadedImages[1].previewUrl} alt="After" className={`w-full h-full object-cover opacity-80 transition-all duration-700 ${activeModality === 'SAR' ? 'grayscale contrast-125 brightness-110 sepia-[.2] hue-rotate-180' : ''}`} />
+                     <img src={uploadedImages[1]!.previewUrl} alt="After" className={`w-full h-full object-cover opacity-80 transition-all duration-700 ${activeModality === 'SAR' ? 'grayscale contrast-125 brightness-110 sepia-[.2] hue-rotate-180' : ''}`} />
                  ) : uploadedImages.length === 2 ? (
                      <>
-                        <img src={uploadedImages[0].previewUrl} alt="Before" className={`w-1/2 h-full object-cover opacity-80 border-r border-cyan-500/50 transition-all duration-700 ${activeModality === 'SAR' ? 'grayscale contrast-125 brightness-110 sepia-[.2] hue-rotate-180' : ''}`} />
-                        <img src={uploadedImages[1].previewUrl} alt="After" className={`w-1/2 h-full object-cover opacity-80 transition-all duration-700 ${activeModality === 'SAR' ? 'grayscale contrast-125 brightness-110 sepia-[.2] hue-rotate-180' : ''}`} />
+                        <img src={uploadedImages[0]!.previewUrl} alt="Before" className={`w-1/2 h-full object-cover opacity-80 border-r border-cyan-500/50 transition-all duration-700 ${activeModality === 'SAR' ? 'grayscale contrast-125 brightness-110 sepia-[.2] hue-rotate-180' : ''}`} />
+                        <img src={uploadedImages[1]!.previewUrl} alt="After" className={`w-1/2 h-full object-cover opacity-80 transition-all duration-700 ${activeModality === 'SAR' ? 'grayscale contrast-125 brightness-110 sepia-[.2] hue-rotate-180' : ''}`} />
                      </>
                  ) : (
                      <img src={uploadedImages[0]?.previewUrl || uploadedImagePreview!} alt="Analysis Scene" className={`w-full h-full object-cover opacity-80 transition-all duration-700 ${activeModality === 'SAR' ? 'grayscale contrast-125 brightness-110 sepia-[.2] hue-rotate-180' : ''}`} />
@@ -752,7 +761,7 @@ export function OnlineDashboard() {
                             </div>
                             <div className="font-mono text-[9px] text-slate-400 space-y-1">
                                <div className="text-cyan-400">{img.name.toUpperCase()}</div>
-                               <div>REF: {img.reference.substring(0,12)}</div>
+                               <div>REF: {(img.reference ?? "").substring(0,12)}</div>
                                <div>SLOT: {img.slot.toUpperCase()}</div>
                                <div>SIZE: {(img.sizeBytes / 1024 / 1024).toFixed(2)} MB</div>
                             </div>

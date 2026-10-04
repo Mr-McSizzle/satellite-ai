@@ -99,6 +99,14 @@ class GeminiDemoAdapter:
             
             # Add images based on task
             images_req = request.get("images", [])
+            load_errors = []
+
+            def _open(img_obj):
+                try:
+                    from sentinel_index.imaging import load_rgb
+                    return load_rgb(img_obj["reference"])
+                except ImportError:
+                    return Image.open(img_obj["reference"]).convert("RGB")
             
             if task_id == "change_vqa":
                 if len(images_req) >= 2:
@@ -106,56 +114,75 @@ class GeminiDemoAdapter:
                     before_img = next((img for img in images_req if img.get("role") == "before"), images_req[0])
                     after_img = next((img for img in images_req if img.get("role") == "after"), images_req[1])
                     
-                    img1 = Image.open(before_img["reference"]).convert("RGB")
-                    img2 = Image.open(after_img["reference"]).convert("RGB")
+                    img1 = _open(before_img)
+                    img2 = _open(after_img)
                     contents.extend([img1, "IMAGE 1 (BEFORE)", img2, "IMAGE 2 (AFTER)"])
             elif task_id in ["optical_segmentation", "optical_sar_fusion"]:
                 # Pass all available valid images
                 for i, img_obj in enumerate(images_req):
                     try:
-                        img = Image.open(img_obj["reference"]).convert("RGB")
-                        contents.extend([img, f"IMAGE {i+1} ({img_obj.get('modality', 'unknown')})"])
-                    except Exception:
-                        pass
+                        contents.extend([_open(img_obj), f"IMAGE {i+1} ({img_obj.get('modality', 'unknown')})"])
+                    except Exception as e:
+                        load_errors.append(str(e))
                 prompt += f"\nTASK: {task_id}. Provide a VLM demonstration analysis of the provided images.\n"
             else:
                 # vqa, captioning, grounding
-                for i, img_obj in enumerate(images_req):
+                for img_obj in images_req:
                     try:
-                        img = Image.open(img_obj["reference"]).convert("RGB")
-                        contents.append(img)
-                    except Exception:
-                        pass
+                        contents.append(_open(img_obj))
+                    except Exception as e:
+                        load_errors.append(str(e))
+
+            if images_req and not any(isinstance(c, Image.Image) for c in contents):
+                raise RuntimeError(f"Could not decode any input imagery: {'; '.join(load_errors) or 'unknown error'}")
             
             # Append prompt text last
             contents.append(prompt)
             
             # Call Gemini with model fallback chain
             import time
-            MODELS = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite"]
+            env_model = os.environ.get("GEMINI_MODEL")
+            MODELS = ([env_model] if env_model else []) + [
+                "gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-2.5-flash",
+            ]
             response = None
             last_err = None
             for model_name in MODELS:
                 try:
                     print(f"[PRITHVI] Trying model: {model_name}", flush=True)
-                    response = self.client.models.generate_content(
-                        model=model_name,
-                        contents=contents,
-                        config=config
-                    )
+                    try:
+                        response = self.client.models.generate_content(
+                            model=model_name, contents=contents, config=config
+                        )
+                    except Exception as tool_err:
+                        # Some models reject search grounding combined with a JSON response schema.
+                        msg = str(tool_err).lower()
+                        if tools and ("tool" in msg or "mime" in msg or "search" in msg) and "400" in msg:
+                            print(f"[PRITHVI] {model_name}: grounding+schema rejected, retrying without search", flush=True)
+                            config = types.GenerateContentConfig(
+                                response_mime_type="application/json",
+                                response_schema=GeminiDemoResponse,
+                                temperature=0.4,
+                            )
+                            tools = []
+                            response = self.client.models.generate_content(
+                                model=model_name, contents=contents, config=config
+                            )
+                        else:
+                            raise
                     print(f"[PRITHVI] Success with {model_name}", flush=True)
                     break
                 except Exception as api_err:
                     last_err = api_err
                     err_str = str(api_err)
-                    if "429" in err_str or "503" in err_str or "500" in err_str:
-                        print(f"[PRITHVI] {model_name} unavailable ({err_str[:60]}), falling back...", flush=True)
+                    retryable = any(code in err_str for code in ("429", "500", "503", "404", "NOT_FOUND", "UNAVAILABLE", "RESOURCE_EXHAUSTED"))
+                    if retryable:
+                        print(f"[PRITHVI] {model_name} unavailable ({err_str[:80]}), falling back...", flush=True)
                         time.sleep(1)
                         continue
-                    else:
-                        raise
+                    raise
             if response is None:
-                raise last_err
+                raise last_err or RuntimeError("No Gemini model available")
             
             # Parse structured response
             try:

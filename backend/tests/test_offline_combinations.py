@@ -111,7 +111,7 @@ def test_combination_mock_prithvi_real_vlm(mock_exists, mock_isdir, clean_env):
     os.environ["USE_REAL_VLM"] = "true"
     os.environ["USE_REAL_PRITHVI"] = "false"
     
-    sys.modules["inference"].vlm_answer.return_value = {"answer": "P1 answer", "model": "satquery-vlm", "metadata": {}}
+    sys.modules["inference"].vlm_answer.return_value = {"answer": "P1 answer", "model": "gaia-vlm", "metadata": {}}
     
     adapter = GaiaAdapter()
     req = AnalysisRequest(query="Detect changes", images=[ImageInfo(reference="a.tif", modality="optical"), ImageInfo(reference="b.tif", modality="optical")])
@@ -121,7 +121,7 @@ def test_combination_mock_prithvi_real_vlm(mock_exists, mock_isdir, clean_env):
     trace = data["execution_trace"]
     vlm_tool = next(t for t in trace["tools_invoked"] if t["tool_name"] == "vlm")
     
-    assert vlm_tool["parameters"]["model"] == "satquery-vlm"
+    assert vlm_tool["parameters"]["model"] == "gaia-vlm"
     args, kwargs = sys.modules["inference"].vlm_answer.call_args
     assert "EXTERNAL PERCEPTION CONTEXT" not in kwargs["question"]
 
@@ -132,7 +132,7 @@ def test_combination_real_real(mock_exists, mock_isdir, clean_env):
     os.environ["USE_REAL_PRITHVI"] = "true"
     
     sys.modules["fusion_engine"].process_change_detection.return_value = create_mock_p2_result("change_detection")
-    sys.modules["inference"].vlm_answer.return_value = {"answer": "P1 answer", "model": "satquery-vlm", "metadata": {}}
+    sys.modules["inference"].vlm_answer.return_value = {"answer": "P1 answer", "model": "gaia-vlm", "metadata": {}}
     
     adapter = GaiaAdapter()
     req = AnalysisRequest(query="Detect changes", images=[ImageInfo(reference="a.tif", modality="optical"), ImageInfo(reference="b.tif", modality="optical")])
@@ -142,7 +142,7 @@ def test_combination_real_real(mock_exists, mock_isdir, clean_env):
     trace = data["execution_trace"]
     vlm_tool = next(t for t in trace["tools_invoked"] if t["tool_name"] == "vlm")
     
-    assert vlm_tool["parameters"]["model"] == "satquery-vlm"
+    assert vlm_tool["parameters"]["model"] == "gaia-vlm"
     assert vlm_tool["parameters"]["p2_context_used"] is True
     assert vlm_tool["parameters"]["p2_context_source"] == "prithvi_p2"
     
@@ -163,7 +163,7 @@ def test_failure_propagation(mock_exists, mock_isdir, clean_env):
     os.environ["USE_REAL_PRITHVI"] = "true"
     
     sys.modules["fusion_engine"].process_change_detection.return_value = create_mock_p2_result("change_detection", "error")
-    sys.modules["inference"].vlm_answer.return_value = {"answer": "P1 recovered", "model": "satquery-vlm", "metadata": {}}
+    sys.modules["inference"].vlm_answer.return_value = {"answer": "P1 recovered", "model": "gaia-vlm", "metadata": {}}
     
     adapter = GaiaAdapter()
     req = AnalysisRequest(query="Detect changes", images=[ImageInfo(reference="a.tif", modality="optical"), ImageInfo(reference="b.tif", modality="optical")])

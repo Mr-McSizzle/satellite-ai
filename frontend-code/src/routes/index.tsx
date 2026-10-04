@@ -25,7 +25,7 @@ function SuperProjectWrapper() {
               : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
           }`}
         >
-          <Cloud className="size-3" /> SATQUERY CLOUD (VLM)
+          <Cloud className="size-3" /> GAIA CLOUD (VLM)
         </button>
         <button
           onClick={() => setMode('OFFLINE')}

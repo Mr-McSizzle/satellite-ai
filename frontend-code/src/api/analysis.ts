@@ -3,18 +3,18 @@ import type {
   BackendAnalysisRequest,
   BackendAnalysisResponse,
   BackendImageInfo,
-} from "@/lib/satquery/types";
+} from "@/lib/gaia/types";
 
 export function submitAnalysis(
   query: string,
   images: BackendImageInfo[],
   sessionId?: string,
 ): Promise<BackendAnalysisResponse> {
-  const body: BackendAnalysisRequest & { session_id?: string } = { query };
+  const body: Record<string, unknown> = { query };
   if (sessionId) {
-    body.session_id = sessionId;
+    body["session_id"] = sessionId;
   } else {
-    body.images = images;
+    body["images"] = images;
   }
 
   return apiRequest<BackendAnalysisResponse>("/v1/analyze", {

@@ -28,7 +28,7 @@ def get_engine_change():
         engine_change = change.ChangeEngine()
     return engine_change
 
-app = FastAPI(title="SatQuery Offline")
+app = FastAPI(title="Gaia Offline")
 
 class TextQuery(BaseModel):
     query: str

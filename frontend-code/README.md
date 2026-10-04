@@ -1,6 +1,6 @@
 # Earth Query Agent
 
-You are a senior frontend engineer and UI/UX designer helping me build a high-quality student hackathon project called "SatQuery AI" for an ISRO/SIH remote-sensing challenge.
+You are a senior frontend engineer and UI/UX designer helping me build a high-quality student hackathon project called "Gaia AI" for an ISRO/SIH remote-sensing challenge.
 
 IMPORTANT:
 
@@ -16,7 +16,7 @@ The core product concept is:
 
 The user should simply ask a natural-language question about satellite imagery.
 
-SatQuery AI must then:
+Gaia AI must then:
 
 1. Understand the user's query.
 
@@ -104,7 +104,7 @@ This forces non-expert users to understand technical concepts such as:
 
 - parameters
 
-SatQuery AI solves this by introducing an agentic natural-language layer above specialist remote-sensing models.
+Gaia AI solves this by introducing an agentic natural-language layer above specialist remote-sensing models.
 
 The user interacts primarily with the QUESTION, not with the machine-learning pipeline.
 
@@ -278,7 +278,7 @@ The UI should dynamically create two upload slots.
 
 The UI must explain:
 
-"This question requires comparison across acquisition dates, so SatQuery needs an earlier and later observation of the same geographic area."
+"This question requires comparison across acquisition dates, so Gaia needs an earlier and later observation of the same geographic area."
 
 Possible outputs:
 
@@ -328,7 +328,7 @@ The system should explain this naturally to the user.
 
 For example:
 
-"Your query requests complementary information from optical and radar observations. SatQuery therefore requires one optical/multispectral image and one SAR image."
+"Your query requests complementary information from optical and radar observations. Gaia therefore requires one optical/multispectral image and one SAR image."
 
 ==================================================
 
@@ -378,7 +378,7 @@ USER:
 
 "What changed between these two dates?"
 
-SATQUERY:
+GAIA:
 
 ┌─────────────────────────────────────────┐
 
@@ -420,7 +420,7 @@ After the query is interpreted, add an attractive section:
 
 This should explain:
 
-1. What SatQuery understood.
+1. What Gaia understood.
 
 2. What analysis is required.
 
@@ -446,7 +446,7 @@ Temporal Change Analysis
 
 WHY:
 
-"Your query asks for differences between two observations of the same geographic area. SatQuery therefore routes the request through a temporal change-analysis workflow rather than a single-image VQA workflow."
+"Your query asks for differences between two observations of the same geographic area. Gaia therefore routes the request through a temporal change-analysis workflow rather than a single-image VQA workflow."
 
 REQUIRED INPUTS:
 
@@ -894,7 +894,7 @@ HEADER
 
 ────────────────────────────────────────
 
-SATQUERY AI
+GAIA AI
 
 "Ask the Earth. Understand the Change."
 
@@ -920,7 +920,7 @@ Understand the Change."
 
 Supporting text:
 
-"Describe what you want to know about satellite imagery. SatQuery automatically determines the required analysis."
+"Describe what you want to know about satellite imagery. Gaia automatically determines the required analysis."
 
 Then a large conversational query input.
 
@@ -946,7 +946,7 @@ QUERY UNDERSTANDING
 
 After the user submits the query, animate/transition into:
 
-"SATQUERY UNDERSTOOD"
+"GAIA UNDERSTOOD"
 
 Display:
 
@@ -1066,7 +1066,7 @@ Example:
 
 Then:
 
-[ ANALYZE WITH SATQUERY ]
+[ ANALYZE WITH GAIA ]
 
 ------------------------------------------------
 
@@ -1756,13 +1756,13 @@ Most importantly:
 
 THE USER ASKS.
 
-SATQUERY DECIDES.
+GAIA DECIDES.
 
 THE USER PROVIDES THE REQUIRED IMAGERY.
 
-SATQUERY ANALYZES.
+GAIA ANALYZES.
 
-SATQUERY EXPLAINS.
+GAIA EXPLAINS.
 i need a little detailed answers, while explaining the user. not so detailed but understandbale length atleast 4 5 lines
 
 This project was built with [Lovable](https://lovable.dev).

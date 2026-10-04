@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { Search, History, CheckSquare, Download, Crosshair, Map, ActivitySquare, AlertTriangle, Layers, Zap } from 'lucide-react';
-import { HudFrame } from '@/components/satquery/HudFrame';
+import { HudFrame } from '@/components/gaia/HudFrame';
 
 export function OfflineDashboard() {
   const [activeNav, setActiveNav] = useState('SEARCH');
@@ -94,7 +94,7 @@ export function OfflineDashboard() {
           <div className="flex items-center gap-3">
             <ActivitySquare className="size-5 text-cyan-400" />
             <div className="leading-none flex flex-col">
-              <span className="font-mono text-base font-bold tracking-[0.2em] text-white glitch-text">SATQUERY OFFLINE</span>
+              <span className="font-mono text-base font-bold tracking-[0.2em] text-white glitch-text">GAIA OFFLINE</span>
               <span className="font-mono text-[8px] tracking-[0.3em] text-cyan-500/80 mt-0.5">ARCHIVE RETRIEVAL & CHANGE</span>
             </div>
           </div>

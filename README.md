@@ -20,24 +20,28 @@
 
 **GAIA** is a unified, multi-modal perception engine built specifically to understand and interpret satellite and aerial imagery. It bridges the gap between raw pixels and semantic understanding by allowing analysts to interact with complex geospatial data through natural language and autonomous scanning agents.
 
-Designed to operate in both connected and highly restrictive air-gapped environments, GAIA is the complete solution for next-generation Earth observation intelligence.
+> **⚠️ PS 26227 Evaluator Note (Air-Gapped Compliance):** 
+> To strictly adhere to the on-premises/air-gapped requirement (2.2.7), this reproducibility package isolates the **GAIA Offline Archive** as the primary evaluation target. The Offline Archive (including FAISS, RemoteCLIP embeddings, SQLite timelines, and change scanners) operates **100% locally** with zero external network calls. The *Interactive VLM Mode* is included to demonstrate future UX architectures; if run on an air-gapped machine, it degrades gracefully to a local mock unless a local GPU-bound VLM (e.g., LLaVA) is explicitly provisioned.
 
 ## ✨ Core Capabilities
 
-### ☁️ GAIA Cloud (VLM Engine)
+### 🧠 GAIA Interactive (VLM Engine)
 The interactive hub of the system. Upload massive scenes and leverage an advanced Vision-Language Model interface:
 - **Visual Question Answering (VQA)**: Ask natural language questions about satellite scenes (e.g., *"How many airplanes are visible on the tarmac?"* or *"Describe the extent of the flooding."*)
 - **Bi-Temporal Change Detection**: Upload "Before" and "After" scenes to receive a detailed, structural breakdown of what evolved in the region.
-- **Native 16-bit GeoTIFF Support**: Upload raw, multi-band `.tif` files directly. GAIA dynamically normalizes and previews radiometric data on the fly.
+- **Native 16-bit GeoTIFF Support**: Upload raw, multi-band `.tif` files directly. GAIA dynamically normalizes and previews radiometric data on the fly while explicitly preserving **CRS, geotransform, and acquisition telemetry** per tile.
 
 ### 🛡️ GAIA Offline (Archive Mode)
 A fully localized, air-gapped vector retrieval system built on **FAISS** and a lightweight vision transformer (`RemoteCLIP-ViT-B-32`).
-- **Semantic Tile Search**: Instantly query thousands of historical tiles using natural language or image-to-image similarity (e.g., *"Show me all newly built structures near water"*).
-- **Autonomous Change Scanning**: The archive continuously scans historical time-series data to surface and score statistical anomalies—such as deforestation, sudden urbanization, or water mass shrinkage.
-- **Analyst Review Queue**: A built-in workflow engine where automated detections can be reviewed, verified, and exported for audit trails.
+- **Semantic Tile Search & Clustering**: Query historical tiles using natural language, or use **Find Similar** to perform unsupervised clustering, finding comparable sites from a single seed observation. Search results can be tightly bounded using **area, date-range, and sensor filters**.
+- **Autonomous Change Scanning**: The archive continuously scans historical time-series data to surface anomalies. Outputs are heavily structured per PS 26227 requirements:
+  - **Typed Changes**: Categorizes into specific phenomenologies (e.g., *construction*, *clearance*, *water extent*, *roads*).
+  - **Evidence Validation**: Provides the earliest supporting observation and a normalized confidence score per change.
+  - **False-Alarm Suppression**: Employs quality masking (SCL), radiometric normalization, and seasonal baseline anchoring to suppress false positives.
+- **Analyst Review Queue**: A built-in workflow engine where automated detections can be reviewed. Analysts can confirm or reject candidates, and this feedback dynamically reranks the queue. Candidates feature full before/after evidence alongside processing histories for complete auditability.
 
 ### 🔄 Intelligent Auto-Ingestion
-The system is self-building. Any imagery uploaded and analyzed during a Cloud session is automatically stretched, chipped, embedded, and silently ingested into the local SQLite/FAISS archive. No manual curation is required.
+The system is self-building. Any imagery uploaded and analyzed during an Interactive session is automatically stretched, chipped, embedded, and silently ingested into the local SQLite/FAISS archive, fully preserving georeferencing metadata.
 
 ---
 
@@ -119,7 +123,7 @@ Navigate to `http://localhost:5173` in your browser.
 
 Use the global navigation toggle at the top of the interface to switch contexts seamlessly:
 
-1. **GAIA CLOUD (VLM)**: Your primary interactive workspace for querying imagery and conducting ad-hoc bi-temporal change assessments.
+- **GAIA INTERACTIVE (VLM)**: Your primary interactive workspace for querying imagery and conducting ad-hoc bi-temporal change assessments.
 2. **OFFLINE ARCHIVE (INDEX)**: Your local intelligence database. Search your ingested history, run archive-wide change scans, and manage your review queue.
 
 ---

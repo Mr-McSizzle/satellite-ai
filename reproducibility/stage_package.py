@@ -49,6 +49,25 @@ def stage_weights(manifest):
             download_file(model["url"], dest)
     print("Weights staged successfully.")
 
+def build_static_frontend():
+    print("Building static frontend bundle for offline deployment...")
+    FRONTEND_DIR = ROOT_DIR / "frontend-code"
+    
+    # We compile the frontend on the connected machine so the offline machine doesn't need Node.js/npm.
+    # Check if npm is installed
+    if shutil.which("npm"):
+        subprocess.run(["npm", "install"], cwd=FRONTEND_DIR, check=True)
+        subprocess.run(["npm", "run", "build"], cwd=FRONTEND_DIR, check=True)
+        
+        # Move the built dist folder into the reproducibility package
+        dest_dist = PACKAGE_DIR / "frontend_dist"
+        if dest_dist.exists():
+            shutil.rmtree(dest_dist)
+        shutil.copytree(FRONTEND_DIR / "dist", dest_dist)
+        print("Frontend bundled successfully.")
+    else:
+        print("WARNING: npm not found. Skipping static frontend build.")
+
 def create_install_scripts():
     print("Creating offline install scripts...")
     sh_script = """#!/bin/bash
@@ -57,6 +76,9 @@ pip install --no-index --find-links=wheelhouse -r requirements.txt
 echo "Copying weights..."
 mkdir -p ../models/weights
 cp weights/* ../models/weights/
+echo "Deploying frontend static bundle..."
+rm -rf ../frontend-code/dist
+cp -r frontend_dist ../frontend-code/dist
 echo "Offline setup complete."
 """
     bat_script = """@echo off
@@ -65,6 +87,9 @@ pip install --no-index --find-links=wheelhouse -r requirements.txt
 echo Copying weights...
 mkdir ..\\models\\weights 2>nul
 copy weights\\* ..\\models\\weights\\
+echo Deploying frontend static bundle...
+rmdir /s /q ..\\frontend-code\\dist 2>nul
+xcopy /E /I frontend_dist ..\\frontend-code\\dist
 echo Offline setup complete.
 """
     with open(PACKAGE_DIR / "install_offline.sh", "w") as f:
@@ -82,6 +107,7 @@ def main():
     
     stage_weights(manifest)
     stage_wheelhouse(manifest)
+    build_static_frontend()
     create_install_scripts()
     
     print(f"\n✅ Reproducibility package staged at: {PACKAGE_DIR}")

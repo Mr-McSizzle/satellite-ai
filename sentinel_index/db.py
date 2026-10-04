@@ -21,7 +21,9 @@ def init_db():
             platform TEXT,
             cloud_cover REAL,
             mgrs_tile TEXT,
-            bounds_wkt TEXT
+            bounds_wkt TEXT,
+            crs TEXT,                       -- Preservation of Coordinate Reference System
+            geotransform TEXT               -- Preservation of Affine Transform
         )
     """)
     conn.execute("""

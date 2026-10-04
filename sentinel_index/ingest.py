@@ -30,6 +30,8 @@ def ingest_scene(scene_path: Path, index: faiss.Index):
         
         # We read the whole scene (it's a small AOI chip). For larger ops, we'd read blocks.
         stack_dn = src.read()
+        crs_wkt = src.crs.to_wkt() if src.crs else None
+        geo_transform = str(src.transform) if src.transform else None
         
     scl = stack_dn[quality.BAND_INDEX["scl"]]
     refl = quality.to_reflectance(stack_dn[:5], offset)
@@ -37,8 +39,8 @@ def ingest_scene(scene_path: Path, index: faiss.Index):
     # Write scene to DB
     conn = db.get_connection()
     conn.execute(
-        "INSERT INTO scenes (scene_id, datetime, platform, cloud_cover, mgrs_tile) VALUES (?, ?, ?, ?, ?)",
-        (scene_id, tags.get("ACQUISITION_DATETIME"), tags.get("PLATFORM"), float(tags.get("CLOUD_COVER", 0)), tags.get("MGRS_TILE"))
+        "INSERT INTO scenes (scene_id, datetime, platform, cloud_cover, mgrs_tile, crs, geotransform) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (scene_id, tags.get("ACQUISITION_DATETIME"), tags.get("PLATFORM"), float(tags.get("CLOUD_COVER", 0)), tags.get("MGRS_TILE"), crs_wkt, geo_transform)
     )
 
     t_px = config.TILE_PX
@@ -126,11 +128,23 @@ def ingest_user_upload(img_path: Path, index: faiss.Index = None) -> str:
     chip_name = f"{scene_id}_0_0.png"
     img_chip.save(config.CHIPS_DIR / chip_name)
     
+    crs_wkt = None
+    geo_transform = None
+    try:
+        import rasterio
+        with rasterio.open(img_path) as src:
+            if src.crs:
+                crs_wkt = src.crs.to_wkt()
+            if src.transform:
+                geo_transform = str(src.transform)
+    except:
+        pass
+        
     conn = db.get_connection()
     now_str = datetime.datetime.now().isoformat()
     conn.execute(
-        "INSERT INTO scenes (scene_id, datetime, platform, cloud_cover, mgrs_tile) VALUES (?, ?, ?, ?, ?)",
-        (scene_id, now_str, "USER_UPLOAD", 0.0, "USER")
+        "INSERT INTO scenes (scene_id, datetime, platform, cloud_cover, mgrs_tile, crs, geotransform) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (scene_id, now_str, "USER_UPLOAD", 0.0, "USER", crs_wkt, geo_transform)
     )
     
     # Embed and add to FAISS

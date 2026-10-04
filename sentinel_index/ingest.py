@@ -155,7 +155,9 @@ def ingest_user_upload(img_path: Path, index: faiss.Index = None) -> str:
     # Reload search engine singleton if it's imported (to reflect new data)
     import sys
     if "sentinel_index.api" in sys.modules:
-        sys.modules["sentinel_index.api"].engine_search.reload()
+        api = sys.modules["sentinel_index.api"]
+        if api.engine_search is not None:
+            api.engine_search.reload()
         
     return tile_id
 

@@ -11,19 +11,24 @@ from pydantic import BaseModel
 from sentinel_index import config, search, change, db
 
 
-engine_search: search.SearchEngine
-engine_change: change.ChangeEngine
+engine_search: search.SearchEngine = None
+engine_change: change.ChangeEngine = None
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    global engine_search, engine_change
-    db.init_db()
-    engine_search = search.SearchEngine()
-    engine_change = change.ChangeEngine()
-    yield
-    # Cleanup if needed
+def get_engine_search():
+    global engine_search
+    if engine_search is None:
+        db.init_db()
+        engine_search = search.SearchEngine()
+    return engine_search
 
-app = FastAPI(title="SatQuery Offline", lifespan=lifespan)
+def get_engine_change():
+    global engine_change
+    if engine_change is None:
+        db.init_db()
+        engine_change = change.ChangeEngine()
+    return engine_change
+
+app = FastAPI(title="SatQuery Offline")
 
 class TextQuery(BaseModel):
     query: str
@@ -31,13 +36,13 @@ class TextQuery(BaseModel):
 
 @app.post("/api/v1/search/text")
 def search_text(req: TextQuery):
-    results = engine_search.text_search(req.query, req.top_k)
+    results = get_engine_search().text_search(req.query, req.top_k)
     return {"results": results}
 
 @app.get("/api/v1/search/image")
 def search_image(tile_id: str, top_k: int = 20):
     try:
-        results = engine_search.image_search(tile_id, top_k)
+        results = get_engine_search().image_search(tile_id, top_k)
         return {"results": results}
     except ValueError as e:
         raise HTTPException(400, str(e))
@@ -45,7 +50,7 @@ def search_image(tile_id: str, top_k: int = 20):
 @app.post("/api/v1/change/scan")
 def scan_change():
     """Run full change detection across the indexed archive."""
-    changes = engine_change.find_all_changes()
+    changes = get_engine_change().find_all_changes()
     
     # Insert candidates into review queue
     conn = db.get_connection()

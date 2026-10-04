@@ -100,6 +100,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
+import { DemoAutopilot } from "../components/DemoAutopilot";
+
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
@@ -108,6 +110,7 @@ function RootShell({ children }: { children: ReactNode }) {
       </head>
       <body>
         {children}
+        <DemoAutopilot />
         <Scripts />
       </body>
     </html>

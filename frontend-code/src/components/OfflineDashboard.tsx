@@ -102,6 +102,7 @@ export function OfflineDashboard() {
             {['SEARCH', 'CHANGE SCAN', 'REVIEW'].map(nav => (
                 <button 
                   key={nav} 
+                  data-demo-nav={nav}
                   onClick={() => setActiveNav(nav)}
                   className={`transition-colors pb-1 ${activeNav === nav ? 'text-cyan-400 border-b border-cyan-400' : 'hover:text-cyan-300 border-b border-transparent'}`}
                 >
@@ -124,13 +125,14 @@ export function OfflineDashboard() {
               <form onSubmit={handleSearch} className="bg-[#060b13]/80 border border-[#1e293b] p-4 flex gap-4 items-center">
                 <Search className="size-5 text-cyan-500/50" />
                 <input 
+                  id="demo-search-input"
                   type="text" 
                   value={query}
                   onChange={e => setQuery(e.target.value)}
                   placeholder="e.g. 'newly built structures near water' or 'solar panels'" 
                   className="flex-1 bg-transparent border-none outline-none font-mono text-sm text-white placeholder-slate-600"
                 />
-                <button type="submit" disabled={loading} className="px-6 py-2 bg-cyan-900/30 text-cyan-400 font-mono text-xs border border-cyan-500/50 hover:bg-cyan-900/50 transition-colors disabled:opacity-50">
+                <button id="demo-search-btn" type="submit" disabled={loading} className="px-6 py-2 bg-cyan-900/30 text-cyan-400 font-mono text-xs border border-cyan-500/50 hover:bg-cyan-900/50 transition-colors disabled:opacity-50">
                   {loading ? 'SEARCHING...' : 'SEARCH'}
                 </button>
               </form>
@@ -142,6 +144,7 @@ export function OfflineDashboard() {
                   <div className="aspect-square relative border-b border-[#1e293b]">
                     <img src={res.chip_url} className="w-full h-full object-cover" alt="Tile" />
                     <button 
+                        data-demo-similar
                         onClick={() => handleImageSearch(res.tile_id)}
                         className="absolute inset-0 bg-cyan-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center font-mono text-xs text-white backdrop-blur-sm">
                         FIND SIMILAR
@@ -171,7 +174,7 @@ export function OfflineDashboard() {
                    <h2 className="font-mono text-lg text-white mb-1">Temporal Change Scanner</h2>
                    <p className="font-mono text-xs text-slate-400">Scans all indexed tiles across time to find persistent thematic changes (PS 2.2.2)</p>
                 </div>
-                <button onClick={handleScanChange} disabled={loading} className="px-6 py-2 bg-amber-900/30 text-amber-400 font-mono text-xs border border-amber-500/50 hover:bg-amber-900/50 transition-colors">
+                <button id="demo-scan-btn" onClick={handleScanChange} disabled={loading} className="px-6 py-2 bg-amber-900/30 text-amber-400 font-mono text-xs border border-amber-500/50 hover:bg-amber-900/50 transition-colors">
                   {loading ? 'SCANNING ARCHIVE...' : 'RUN FULL ARCHIVE SCAN'}
                 </button>
              </div>
@@ -237,10 +240,10 @@ export function OfflineDashboard() {
                       <div className="text-slate-500">SCORE: {item.score.toFixed(3)}</div>
                    </div>
                    <div className="flex gap-2 shrink-0">
-                      <button onClick={() => handleDecision(item.candidate_id, 'confirmed')} className="px-6 py-3 bg-green-900/30 text-green-400 hover:bg-green-900/60 border border-green-500/50 font-mono text-xs transition-colors">
+                      <button data-demo-confirm onClick={() => handleDecision(item.candidate_id, 'confirmed')} className="px-6 py-3 bg-green-900/30 text-green-400 hover:bg-green-900/60 border border-green-500/50 font-mono text-xs transition-colors">
                         CONFIRM
                       </button>
-                      <button onClick={() => handleDecision(item.candidate_id, 'rejected')} className="px-6 py-3 bg-red-900/30 text-red-400 hover:bg-red-900/60 border border-red-500/50 font-mono text-xs transition-colors">
+                      <button data-demo-reject onClick={() => handleDecision(item.candidate_id, 'rejected')} className="px-6 py-3 bg-red-900/30 text-red-400 hover:bg-red-900/60 border border-red-500/50 font-mono text-xs transition-colors">
                         REJECT
                       </button>
                    </div>

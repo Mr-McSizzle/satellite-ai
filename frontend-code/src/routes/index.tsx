@@ -18,6 +18,7 @@ function SuperProjectWrapper() {
       {/* Global Mode Switcher - Highest Z-Index */}
       <div className="absolute top-16 left-1/2 -translate-x-1/2 z-[100] flex bg-[#060b13]/90 backdrop-blur-md border border-[#1e293b] rounded-full p-1 shadow-[0_0_20px_rgba(34,211,238,0.1)]">
         <button
+          id="demo-mode-interactive"
           onClick={() => setMode('INTERACTIVE')}
           className={`flex items-center gap-2 px-6 py-1.5 rounded-full font-mono text-[10px] transition-all duration-300 ${
             mode === 'INTERACTIVE' 
@@ -28,6 +29,7 @@ function SuperProjectWrapper() {
           <Cloud className="size-3" /> GAIA INTERACTIVE (VLM)
         </button>
         <button
+          id="demo-mode-offline"
           onClick={() => setMode('OFFLINE')}
           className={`flex items-center gap-2 px-6 py-1.5 rounded-full font-mono text-[10px] transition-all duration-300 ${
             mode === 'OFFLINE' 

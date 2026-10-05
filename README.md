@@ -4,6 +4,19 @@
 
 SatQuery AI explores how a multimodal assistant can turn satellite imagery into an interactive analysis workflow rather than a one-shot model prediction.
 
+## Architecture
+
+```mermaid
+flowchart TD
+    A[Satellite / remote-sensing imagery] --> B[Backend ingestion]
+    B --> C[Controller / orchestration]
+    C --> D[Vision-language reasoning]
+    C --> E[Structured tools / contracts]
+    D --> F[Structured analysis]
+    E --> F
+    F --> G[Web interface]
+```
+
 ## Repository structure
 
 ```text
@@ -24,22 +37,6 @@ The repository deliberately separates the **interface**, **backend**, and **cont
 - Backend storage and API workflows
 - A dedicated frontend for interacting with remote-sensing analysis
 - Mocked components and tests for controller development
-
-## Conceptual flow
-
-```text
-satellite / remote-sensing image
-            ↓
-     backend ingestion
-            ↓
- controller / task orchestration
-            ↓
- vision-language reasoning
-            ↓
- structured analysis
-            ↓
-        web interface
-```
 
 ## Why remote sensing
 
